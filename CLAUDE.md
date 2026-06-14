@@ -1,0 +1,279 @@
+# CLAUDE.md — Predikta
+
+Mini App para MiniPay (Celo) de mercados de predicción. Mercado global (cualquier usuario MiniPay, 60+ países, 14M+ wallets).
+
+---
+
+## Principios fundamentales
+
+- Confianza > Volumen
+- Calidad > Cantidad
+- Mercados verificables > Mercados virales
+- Máximo 3 clics para participar (mobile-first estricto)
+
+---
+
+## Stack
+
+| Capa | Tecnología | Notas |
+|---|---|---|
+| Frontend + Backend | Next.js 14 (App Router) | Server Actions + API Routes. Sin BFF separado. |
+| DB + Real-time + Auth + Storage | Supabase | Sin Redis en MVP. Real-time reemplaza pub/sub. |
+| UI Components | shadcn/ui + TailwindCSS | Dark mode nativo. |
+| Animaciones | Framer Motion | Transiciones fluidas mobile. |
+| Blockchain | Viem + Wagmi | Estándar para Celo/MiniPay. |
+| Moderación IA | MiniMax Token Plan API | Anthropic-compatible format. Tool calling forzado. |
+| Deploy | Vercel + Supabase Cloud | Zero-config. |
+
+### Lo que NO usamos y por qué
+
+- **Redis**: Supabase Real-time + materialized views cubren los casos de uso del MVP.
+- **NestJS**: Next.js Server Actions cubren la lógica compleja sin servicio separado.
+
+---
+
+## Diseño
+
+- **Tema**: Dark (`#0A0A0F` base)
+- **Acento Sí**: gradiente azul-violeta (`#4F46E5` → `#7C3AED`)
+- **Acento No**: gradiente rojo-naranja (`#DC2626` → `#EA580C`)
+- **Estilo cards**: glassmorphism
+- **Visual core**: barras de probabilidad animadas (Framer Motion)
+- **Tipografía**: Inter (números nítidos para montos y porcentajes)
+- **Referencia**: Polymarket + Farcaster Frames, más accesible para usuarios emergentes
+
+---
+
+## Tokens y blockchain
+
+- **Tokens permitidos**: USDm, USDC, USDT
+- **NUNCA** mostrar CELO a usuarios (MiniPay lo oculta y maneja internamente)
+- `cUSD` está renombrado a `USDm` — usar siempre el nombre nuevo
+- Fee abstraction: USDm para gas (CIP-64)
+- USDC adapter (fee): `0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B`
+- USDT adapter (fee): `0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72`
+- Celo Chain ID: 42220 (Mainnet), 44787 (Alfajores Testnet)
+
+---
+
+## Modelo de negocio
+
+- Comisión: **5% por mercado resuelto**
+  - 4% → Predikta
+  - 1% → Creador del mercado
+- Ejemplo: pool 1.000 USDm → ganadores 950 + Predikta 40 + creador 10
+
+---
+
+## Módulos MVP
+
+1. Login con MiniPay (wallet connect, detección `window.ethereum.isMiniPay`)
+2. Perfil de usuario (ganancias, mercados, aciertos, Trust Score, nivel, badges)
+3. Creación de mercados
+4. Participación en mercados
+5. Resolución de mercados
+6. Distribución automática de premios (smart contract)
+7. Ranking
+8. Trust Score
+9. Moderación (IA + administrativa)
+10. Dashboard administrativo
+
+---
+
+## Trust Score
+
+- Rango: 0–100 | Inicial: 50
+- **Incrementos**: aprobado +2 | resuelto +3 | exitoso +2 | activo +1/mes | verificado +10
+- **Penalizaciones**: rechazado -10 | reporte -15 | engañoso -25 | fraude -100
+
+### Niveles
+
+| Nivel | Requisitos | Beneficios |
+|---|---|---|
+| Nuevo Usuario | Trust Score < 80 | Publicación manual, máx 3 mercados/día |
+| Creador Verificado | ≥80 + 10 mercados + 30 días | Publicación automática |
+| Creador Premium | ≥90 + 50 mercados | Destacados, mayor visibilidad |
+
+---
+
+## Gamificación
+
+- **Niveles**: Bronce → Plata → Oro → Diamante → Oráculo
+- **Badges**: Primer acierto, 10 aciertos, 100 aciertos, Creador destacado, Oráculo local
+
+---
+
+## Moderación IA (MiniMax)
+
+```typescript
+// Formato Anthropic-compatible. Tool choice SIEMPRE forzado.
+tool_choice: { type: "tool", name: "clasificar_mercado" }
+
+// Categorías de salida
+"AUTO_APPROVE" | "NEEDS_REVIEW" | "AUTO_REJECT"
+```
+
+**Pipeline**: Creación → IA Moderadora → Revisión → Aprobación/Rechazo → Publicación
+
+### Contenido prohibido
+
+Datos personales, salud individual, violencia, suicidio, sexual, difamación, actividades ilegales, información privilegiada, mercados no verificables.
+
+---
+
+## Verificación de mercados
+
+Cada mercado debe declarar su fuente: resultado deportivo, fuente pública, dato meteorológico, resultado institucional, organizador autorizado, o verificación comunitaria.
+
+---
+
+## Smart Contracts
+
+Responsabilidades on-chain:
+- Custodia de fondos
+- Pools de participación
+- Distribución automática de premios
+- Comisiones (4% + 1%)
+- Resolución de mercados
+
+**Los fondos no dependen de custodia manual de Predikta.**
+
+---
+
+## Estructura del proyecto
+
+```
+C:\opi\Predikta\
+├── CLAUDE.md                          ← este archivo
+├── Predikta_Prompt_Maestro.md         ← visión original del producto
+├── contracts/                         ← Foundry (Solidity)
+│   ├── foundry.toml
+│   ├── src/PrediktaMarket.sol         ✅ contrato principal
+│   ├── script/Deploy.s.sol            ✅ deploy a Celo/Alfajores
+│   └── test/PrediktaMarket.t.sol      ✅ 11/11 tests pasando
+└── app/                               ← Next.js 16.2.9 (Turbopack)
+    └── src/
+        ├── types/index.ts             ✅ todos los tipos TypeScript
+        ├── lib/
+        │   ├── supabase/client.ts     ✅ browser client
+        │   ├── supabase/server.ts     ✅ SSR client (solo next/headers, sin service role)
+        │   ├── supabase/service.ts    ✅ service role client (separado — ver gotchas)
+        │   ├── minimax/moderation.ts  ✅ tool calling MiniMax
+        │   └── contracts/predikta.ts  ✅ ABI + viem + tokens Celo
+        ├── actions/
+        │   ├── market.actions.ts      ✅ crear / resolver / listar
+        │   └── user.actions.ts        ✅ perfil + trust score
+        ├── components/
+        │   ├── market/ProbabilityBar  ✅ barras animadas Framer Motion
+        │   ├── market/MarketCard      ✅ glassmorphism dark
+        │   ├── layout/BottomNav       ✅ nav mobile 5 tabs
+        │   └── profile/TrustScore     ✅ barra animada
+        └── app/
+            ├── layout.tsx             ✅ Inter + dark + BottomNav + Toaster
+            ├── page.tsx               ✅ Home (featured + activos)
+            ├── explore/page.tsx       ✅ filtros categoría + search
+            ├── create/page.tsx        ✅ formulario completo
+            └── profile/page.tsx       ✅ stats + badges + historial
+```
+
+---
+
+## Estado actual
+
+### ✅ Completado
+
+| Módulo | Detalle |
+|---|---|
+| Base de datos | 12 tablas, 14 ENUMs, índices, triggers, RLS en Supabase |
+| Smart Contract | `PrediktaMarket.sol` — 11/11 tests. Fees, pools, claim, refund. |
+| Scaffold Next.js 16 | App Router + shadcn/ui + Framer Motion + Viem + Supabase |
+| Moderación IA | MiniMax tool calling forzado (`AUTO_APPROVE/NEEDS_REVIEW/AUTO_REJECT`) |
+| Server Actions | Crear mercado (con moderación), resolver, listar, perfil, trust score |
+| Componentes UI | ProbabilityBar, MarketCard, BottomNav, TrustScore |
+| Páginas | Home, Explore, Create, Profile |
+| TypeScript | 0 errores en `tsc --noEmit` |
+| App corriendo | localhost:3000 mostrando mercados reales con barras de probabilidad animadas |
+
+### 🔲 Pendiente MVP
+
+| Prioridad | Tarea | Detalle |
+|---|---|---|
+| 🔴 Alta | `/market/[id]` — página de detalle | Mostrar mercado, opciones, pool, participantes. Bet modal (≤3 clics). Botón claim winnings. |
+| 🔴 Alta | Wagmi Provider + MiniPay auto-connect | Detectar `window.ethereum.isMiniPay`, auto-connect sin botón, contexto global de wallet. |
+| 🔴 Alta | Deploy contrato en Alfajores | `forge script Deploy --rpc-url alfajores --broadcast`. Actualizar `NEXT_PUBLIC_PREDIKTA_CONTRACT`. |
+| 🔴 Alta | MINIMAX_API_KEY en .env.local | Para activar moderación real en creación de mercados. |
+| 🟡 Media | `/ranking` — tabla de líderes | Rankings por período (semanal/mensual/total). Posición del usuario actual. |
+| 🟡 Media | `/admin` — dashboard moderación | Aprobar/rechazar mercados pendientes. Ajustar Trust Score. Resolver disputas. |
+| 🟡 Media | Supabase Real-time en `/market/[id]` | Actualizar pool y probabilidades en vivo sin refresh. |
+| 🟡 Media | Notificaciones in-app | Leer tabla `notifications`. Indicador en BottomNav cuando hay no leídas. |
+| 🟢 Baja | Fix datos de prueba (acentos) | Re-insertar desde Supabase dashboard con encoding correcto. |
+| 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
+| 🟢 Baja | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
+| 🟢 Baja | Deploy Vercel | Conectar repo, configurar env vars, dominio. |
+
+---
+
+## Gotchas técnicos descubiertos
+
+- **Next.js 16 + Turbopack instalado** (no 14). Puede diferir de la documentación oficial de Next.js 14.
+- **Separar service.ts de server.ts**: En Next.js 16, un archivo que importa `next/headers` no puede coexistir con funciones que se resuelven en contexto browser. `server.ts` = solo SSR client con cookies. `service.ts` = solo service role client sin cookies.
+- **Supabase PGRST201 — FK ambigua**: Cuando hay dos FKs entre dos tablas, especificar siempre la relación: `options!options_market_id_fkey(*)` en lugar de `options(*)`. Afecta cualquier query que joinee `markets` con `options`.
+- **Bash heredoc pierde UTF-8**: Los inserts SQL vía bash/jq pierden acentos en español. Para datos de prueba usar el dashboard de Supabase o psql con `PGCLIENTENCODING=UTF8`. No afecta producción.
+- **Supabase Management API** requiere PAT (`sbp_...`), no la service role key, para DDL.
+- **jq escaping**: usar `jq -n --arg q "$SQL" '{"query": $q}'` para SQL con newlines y comillas simples.
+- **MiniMax** es Anthropic-compatible (no OpenAI-compatible) para tool calling.
+- **marketId on-chain** = `keccak256(UUID de Supabase)` — linkea on-chain con off-chain sin oracle.
+- **Foundry PATH**: agregar `export PATH="$PATH:/c/Users/demo/.foundry/bin"` en cada sesión bash nueva.
+- **MiniPay wallet**: no usar botón "Conectar" — auto-connect con `window.ethereum.request({ method: 'eth_requestAccounts' })` al montar el componente.
+- **USDm decimals**: 18. USDC/USDT: 6. El contrato lo maneja transparentemente con SafeERC20.
+
+---
+
+## Variables de entorno necesarias
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://qntwlmkfwkrosjxmqeee.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<obtener de Supabase dashboard → API → anon key>
+SUPABASE_SERVICE_ROLE_KEY=<ya configurado>
+
+# Celo
+NEXT_PUBLIC_CHAIN_ID=42220
+NEXT_PUBLIC_PREDIKTA_CONTRACT=<dirección post-deploy en Alfajores/Mainnet>
+RESOLVER_PRIVATE_KEY=<wallet que actúa como resolver del contrato>
+
+# MiniMax
+MINIMAX_API_KEY=<tu API key de MiniMax>
+MINIMAX_BASE_URL=https://api.minimax.chat/v1
+```
+
+---
+
+## Orden de desarrollo
+
+```
+1. Modelo de datos       ✅ completado
+2. Smart Contracts       ✅ completado (11/11 tests)
+3. Scaffold completo     ✅ completado (0 errores TS, app corriendo con datos reales)
+4. /market/[id] + bet    ← SIGUIENTE (mañana)
+5. Wagmi + MiniPay connect
+6. Deploy Alfajores
+7. /ranking + /admin
+8. Real-time + notificaciones
+9. Deploy Vercel
+```
+
+---
+
+## Reglas para Claude en este proyecto
+
+- Usar voseo rioplatense en respuestas en español.
+- Nunca agregar Redis hasta que los números lo justifiquen post-MVP.
+- Nunca mostrar o sugerir CELO como token de usuario.
+- Siempre usar `USDm` (no `cUSD`).
+- Tool calling forzado en cualquier integración de clasificación con MiniMax.
+- Mobile-first estricto: cualquier componente se diseña primero para 360×640.
+- Máximo 3 clics para cualquier acción crítica del usuario.
+- shadcn/ui como base de componentes — no reinventar UI primitives.
+- Al conectar wallet: auto-connect sin botón (patrón MiniPay).
+- Antes de empezar una sesión nueva: leer este archivo + `mem_context` para recuperar estado.

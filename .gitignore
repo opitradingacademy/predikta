@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Foundry build artifacts (keep broadcast for deploy records)
+contracts/out/
+contracts/cache/
+
+# Foundry libs (reinstalable vía forge install)
+contracts/lib/
+
+# Next.js
+app/.next/
+app/out/
+
+# OS
+.DS_Store
+Thumbs.db
