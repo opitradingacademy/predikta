@@ -67,7 +67,7 @@ export async function createMarket(input: CreateMarketInput) {
   const { data: creator } = await supabase
     .from('users')
     .select('id, trust_score, total_markets_created')
-    .eq('wallet_address', input.creatorWallet)
+    .eq('wallet_address', input.creatorWallet.toLowerCase())
     .single()
 
   if (!creator) return { error: 'Usuario no encontrado' }
