@@ -295,6 +295,34 @@ export async function participateMarket(input: {
 export async function adminUpdateMarket(marketId: string, action: 'approve' | 'reject', reason?: string) {
   const supabase = createServiceClient()
 
+  if (action === 'approve') {
+    // Registrar mercado on-chain antes de aprobar en Supabase
+    const { data: market } = await supabase
+      .from('markets')
+      .select('*, options!options_market_id_fkey(*)')
+      .eq('id', marketId)
+      .single()
+
+    if (market) {
+      try {
+        const resolverClient = getResolverClient()
+        const bytes32Id = uuidToBytes32(marketId)
+        const tokenAddress = TOKENS[market.token as keyof typeof TOKENS] ?? TOKENS.USDm
+        const closeTimestamp = BigInt(Math.floor(new Date(market.close_date).getTime() / 1000))
+        const optionCount = (market.options?.length ?? 2) as number
+
+        await resolverClient.writeContract({
+          address: CONTRACT_ADDRESS,
+          abi: PREDIKTA_ABI,
+          functionName: 'createMarket',
+          args: [bytes32Id, tokenAddress, optionCount, closeTimestamp],
+        })
+      } catch (e) {
+        return { error: `Error on-chain: ${(e as Error).message}` }
+      }
+    }
+  }
+
   const updates =
     action === 'approve'
       ? { status: 'approved', moderation_status: 'approved', moderation_reason: reason ?? null }

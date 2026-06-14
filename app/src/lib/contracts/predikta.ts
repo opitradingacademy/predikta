@@ -121,12 +121,21 @@ export function uuidToBytes32(uuid: string): `0x${string}` {
 
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_PREDIKTA_CONTRACT as `0x${string}`
 
-// Tokens en Celo Mainnet
-export const TOKENS = {
+// Tokens Mainnet
+const TOKENS_MAINNET = {
   USDm: '0x765DE816845861e75A25fCA122bb6898B8B1282a' as `0x${string}`,
   USDC: '0xcebA9300f2b948710d2653dD7B07f33A8B32118C' as `0x${string}`,
   USDT: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e' as `0x${string}`,
 }
+
+// Tokens Celo Sepolia (testnet)
+const TOKENS_SEPOLIA = {
+  USDm: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' as `0x${string}`, // cUSD testnet
+  USDC: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' as `0x${string}`, // usar cUSD como fallback
+  USDT: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' as `0x${string}`,
+}
+
+export const TOKENS = isMainnet ? TOKENS_MAINNET : TOKENS_SEPOLIA
 
 export const publicClient = createPublicClient({
   chain: activeChain as typeof celo,
