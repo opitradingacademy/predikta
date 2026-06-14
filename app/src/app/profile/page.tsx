@@ -1,11 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { getUserProfile } from '@/actions/user.actions'
 import { TrustScore } from '@/components/profile/TrustScore'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { ShieldCheck } from 'lucide-react'
 import type { User, UserBadge, Participation } from '@/types'
+
+const ADMIN_WALLET = '0x5288acfd5c2371f880b4a2bbee8af647bd9a051b'
 
 interface ProfileData {
   user: User
@@ -14,13 +18,16 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [data, setData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const wallet = (window as unknown as { ethereum?: { selectedAddress?: string } }).ethereum?.selectedAddress
     if (!wallet) { setLoading(false); return }
 
+    setIsAdmin(wallet.toLowerCase() === ADMIN_WALLET)
     getUserProfile(wallet)
       .then(({ data }) => { if (data) setData(data as ProfileData) })
       .finally(() => setLoading(false))
@@ -110,6 +117,16 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+      )}
+
+      {isAdmin && (
+        <button
+          onClick={() => router.push('/admin')}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600/20 border border-violet-500/30 py-3 text-sm font-semibold text-violet-300 hover:bg-violet-600/30 transition-colors"
+        >
+          <ShieldCheck className="w-4 h-4" />
+          Panel de administración
+        </button>
       )}
 
       <Separator className="bg-white/10" />

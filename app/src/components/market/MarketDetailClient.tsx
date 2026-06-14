@@ -126,7 +126,7 @@ export function MarketDetailClient({ market }: Props) {
   }, [market.id])
 
   const options    = liveOptions
-  const isActive   = liveMarket.status === 'active'
+  const isActive   = liveMarket.status === 'active' || liveMarket.status === 'approved'
   const isResolved = liveMarket.status === 'resolved'
   const winningOption = isResolved
     ? options.find(o => o.id === liveMarket.resolved_option_id)
