@@ -52,7 +52,12 @@ export async function createMarket(input: CreateMarketInput) {
   const supabase = createServiceClient()
 
   // 1. Moderar con MiniMax
-  const moderation = await moderateMarket(input.title, input.description, input.resolutionSourceUrl)
+  let moderation: { categoria: 'AUTO_APPROVE' | 'NEEDS_REVIEW' | 'AUTO_REJECT'; razon: string }
+  try {
+    moderation = await moderateMarket(input.title, input.description, input.resolutionSourceUrl)
+  } catch {
+    moderation = { categoria: 'NEEDS_REVIEW', razon: 'Moderación automática no disponible' }
+  }
 
   if (moderation.categoria === 'AUTO_REJECT') {
     return { error: `Mercado rechazado: ${moderation.razon}` }
