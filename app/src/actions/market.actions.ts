@@ -297,8 +297,8 @@ export async function adminUpdateMarket(marketId: string, action: 'approve' | 'r
 
   const updates =
     action === 'approve'
-      ? { status: 'approved', moderation_status: 'auto_approved', moderation_reason: reason ?? null }
-      : { status: 'rejected', moderation_status: 'auto_rejected', moderation_reason: reason ?? 'Rechazado por moderación' }
+      ? { status: 'approved', moderation_status: 'approved', moderation_reason: reason ?? null }
+      : { status: 'rejected', moderation_status: 'rejected', moderation_reason: reason ?? 'Rechazado por moderación' }
 
   const { error } = await supabase.from('markets').update(updates).eq('id', marketId)
   if (error) return { error: error.message }

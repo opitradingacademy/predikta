@@ -30,7 +30,7 @@ export default function AdminPage() {
 
   function load() {
     setLoading(true)
-    const status = tab === 'pending' ? 'pending' : 'approved'
+    const status = tab === 'pending' ? 'needs_review' : 'approved'
     Promise.all([
       getAdminStats(),
       getMarkets({ status, limit: 30 }),
