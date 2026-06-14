@@ -5,8 +5,8 @@ import { Suspense } from 'react'
 import type { Market } from '@/types'
 
 async function FeaturedMarkets() {
-  const { data: featured } = await getMarkets({ featured: true, status: 'active', limit: 3 })
-  const { data: recent }   = await getMarkets({ status: 'active', limit: 10 })
+  const { data: featured } = await getMarkets({ featured: true, limit: 3 })
+  const { data: recent }   = await getMarkets({ limit: 10 })
 
   return (
     <div className="space-y-6">
