@@ -8,7 +8,8 @@ import {
   ArrowLeft, Clock, TrendingUp, Users, ExternalLink,
   Trophy, Loader2, Wallet, Share2,
 } from 'lucide-react'
-import { parseUnits } from 'viem'
+import { createWalletClient, custom, parseUnits } from 'viem'
+import { celoAlfajores } from 'viem/chains'
 import { useAccount, useWalletClient } from 'wagmi'
 import { ProbabilityBar } from './ProbabilityBar'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,13 @@ import { TOKENS, PREDIKTA_ABI, CONTRACT_ADDRESS, uuidToBytes32 } from '@/lib/con
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { Market } from '@/types'
+
+const celoSepolia = {
+  ...celoAlfajores,
+  id: 11142220,
+  name: 'Celo Sepolia',
+  rpcUrls: { default: { http: ['https://forno.celo-sepolia.celo-testnet.org'] } },
+} as const
 
 const ERC20_ABI = [
   {
@@ -84,8 +92,37 @@ export function MarketDetailClient({ market }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const { address, isConnected, isConnecting } = useAccount()
-  const { data: walletClient }   = useWalletClient()
+  const { address: wagmiAddress, isConnected: wagmiConnected, isConnecting } = useAccount()
+  const { data: wagmiWalletClient } = useWalletClient()
+
+  const [miniPayAddress, setMiniPayAddress] = useState<`0x${string}` | null>(null)
+
+  // Fallback directo a window.ethereum para MiniPay
+  useEffect(() => {
+    if (wagmiAddress) return
+    if (typeof window === 'undefined' || !window.ethereum) return
+    const load = async () => {
+      try {
+        const accounts: string[] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+        if (accounts[0]) setMiniPayAddress(accounts[0].toLowerCase() as `0x${string}`)
+      } catch { /* silencioso */ }
+    }
+    load()
+  }, [wagmiAddress])
+
+  const address    = wagmiAddress ?? miniPayAddress ?? undefined
+  const isConnected = wagmiConnected || !!miniPayAddress
+
+  // Si Wagmi no tiene walletClient, crear uno desde window.ethereum
+  function getClient() {
+    if (wagmiWalletClient) return wagmiWalletClient
+    if (typeof window === 'undefined' || !window.ethereum) return null
+    return createWalletClient({
+      account: address,
+      chain: celoSepolia as typeof celoAlfajores,
+      transport: custom(window.ethereum),
+    })
+  }
 
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
   const [amount, setAmount]                     = useState('')
@@ -137,7 +174,8 @@ export function MarketDetailClient({ market }: Props) {
     if (!parsedAmount || parsedAmount <= 0) { toast.error('Ingresá un monto válido'); return }
     if (!selectedOptionId)                  { toast.error('Seleccioná una opción'); return }
     if (!CONTRACT_ADDRESS)                  { toast.error('Contrato no desplegado todavía'); return }
-    if (!walletClient || !address)          { toast.error('Wallet no conectada'); return }
+    const client = getClient()
+    if (!client || !address)                { toast.error('Wallet no conectada'); return }
 
     const option       = options.find(o => o.id === selectedOptionId)!
     const tokenAddress = TOKENS[market.token]
@@ -148,7 +186,7 @@ export function MarketDetailClient({ market }: Props) {
     setIsBetting(true)
     try {
       toast.loading('Aprobando tokens...', { id: 'bet' })
-      await walletClient.writeContract({
+      await client.writeContract({
         address: tokenAddress,
         abi: ERC20_ABI,
         functionName: 'approve',
@@ -157,7 +195,7 @@ export function MarketDetailClient({ market }: Props) {
       })
 
       toast.loading('Enviando apuesta...', { id: 'bet' })
-      const txHash = await walletClient.writeContract({
+      const txHash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: PREDIKTA_ABI,
         functionName: 'placeBet',
@@ -193,12 +231,13 @@ export function MarketDetailClient({ market }: Props) {
 
   async function handleClaim() {
     if (!CONTRACT_ADDRESS)         { toast.error('Contrato no desplegado todavía'); return }
-    if (!walletClient || !address) { toast.error('Wallet no conectada'); return }
+    const client = getClient()
+    if (!client || !address)       { toast.error('Wallet no conectada'); return }
 
     setIsClaiming(true)
     try {
       toast.loading('Reclamando ganancias...', { id: 'claim' })
-      await walletClient.writeContract({
+      await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: PREDIKTA_ABI,
         functionName: 'claimWinnings',
