@@ -15,10 +15,16 @@ function MiniPayAutoConnect() {
     if (isConnected) return
     if (typeof window === 'undefined' || !window.ethereum) return
 
-    const connector = connectors.find(c => c.id === 'injected')
-    if (!connector) return
+    const tryConnect = () => {
+      const connector = connectors.find(c => c.id === 'injected')
+      if (!connector) return
+      connect({ connector })
+    }
 
-    connect({ connector })
+    // Intentar inmediatamente y luego con delay por si ethereum no está listo
+    tryConnect()
+    const t = setTimeout(tryConnect, 500)
+    return () => clearTimeout(t)
   }, [isConnected, connect, connectors])
 
   return null

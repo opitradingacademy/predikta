@@ -84,7 +84,7 @@ export function MarketDetailClient({ market }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, isConnecting } = useAccount()
   const { data: walletClient }   = useWalletClient()
 
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
@@ -320,10 +320,16 @@ export function MarketDetailClient({ market }: Props) {
               Tocá una opción para apostar
             </p>
           )}
-          {isActive && !isConnected && (
+          {isActive && !isConnected && !isConnecting && (
             <div className="mt-3 rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-2 text-white/40">
               <Wallet className="w-4 h-4 shrink-0" />
               <p className="text-xs">Abrí esta app en MiniPay para apostar</p>
+            </div>
+          )}
+          {isConnecting && (
+            <div className="mt-3 rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-2 text-white/40">
+              <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+              <p className="text-xs">Conectando wallet...</p>
             </div>
           )}
         </div>
