@@ -187,29 +187,29 @@ C:\opi\Predikta\
 | Base de datos | 12 tablas, 14 ENUMs, índices, triggers, RLS en Supabase |
 | Smart Contract | `PrediktaMarket.sol` — 11/11 tests. Fees, pools, claim, refund. |
 | Scaffold Next.js 16 | App Router + shadcn/ui + Framer Motion + Viem + Supabase |
-| Moderación IA | MiniMax tool calling forzado (`AUTO_APPROVE/NEEDS_REVIEW/AUTO_REJECT`) |
-| Server Actions | Crear mercado (con moderación), resolver, listar, perfil, trust score |
-| Componentes UI | ProbabilityBar, MarketCard, BottomNav, TrustScore |
-| Páginas | Home, Explore, Create, Profile |
-| TypeScript | 0 errores en `tsc --noEmit` |
-| App corriendo | localhost:3000 mostrando mercados reales con barras de probabilidad animadas |
+| Moderación IA | MiniMax tool calling forzado (`AUTO_APPROVE/NEEDS_REVIEW/AUTO_REJECT`) con fallback a `pending` si falla |
+| Server Actions | Crear mercado (con moderación), resolver, listar, perfil, trust score, aprobar on-chain |
+| Componentes UI | ProbabilityBar, MarketCard, BottomNav, TrustScore, MarketDetailClient |
+| Páginas | Home, Explore, Create, Profile, Market/[id], Admin, Ranking, Notifications |
+| Deploy | GitHub: opitradingacademy/predikta · Vercel: predikta-eight.vercel.app |
+| Wagmi + MiniPay | Auto-connect con `useAccount` (Wagmi v2). Chain: Celo Sepolia 11142220 |
+| Contrato deployado | Celo Sepolia: `0xa468ba20dd8AB475a8d78d0cF2ec7Cf334ECEBA4` |
+| Token de prueba | TestToken (tUSDm): `0x7cc8b6e9fe615490db19a89991042fe1976d1832` en Celo Sepolia |
+| Flujo aprobación | Admin aprueba → registra on-chain → status approved → apostable |
+| Botón Admin | Visible en /profile solo para wallet admin |
 
 ### 🔲 Pendiente MVP
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🔴 Alta | `/market/[id]` — página de detalle | Mostrar mercado, opciones, pool, participantes. Bet modal (≤3 clics). Botón claim winnings. |
-| 🔴 Alta | Wagmi Provider + MiniPay auto-connect | Detectar `window.ethereum.isMiniPay`, auto-connect sin botón, contexto global de wallet. |
-| 🔴 Alta | Deploy contrato en Alfajores | `forge script Deploy --rpc-url alfajores --broadcast`. Actualizar `NEXT_PUBLIC_PREDIKTA_CONTRACT`. |
-| 🔴 Alta | MINIMAX_API_KEY en .env.local | Para activar moderación real en creación de mercados. |
-| 🟡 Media | `/ranking` — tabla de líderes | Rankings por período (semanal/mensual/total). Posición del usuario actual. |
-| 🟡 Media | `/admin` — dashboard moderación | Aprobar/rechazar mercados pendientes. Ajustar Trust Score. Resolver disputas. |
-| 🟡 Media | Supabase Real-time en `/market/[id]` | Actualizar pool y probabilidades en vivo sin refresh. |
+| 🔴 Alta | Flujo apuesta completo | Verificar que useAccount conecta en MiniPay y apuesta funciona end-to-end |
+| 🔴 Alta | Botón Admin en /profile | Aparece solo si wallet === ADMIN_WALLET (0x5288ac...) — pendiente verificar en MiniPay |
+| 🟡 Media | Supabase Real-time en `/market/[id]` | Ya implementado, verificar que funciona |
 | 🟡 Media | Notificaciones in-app | Leer tabla `notifications`. Indicador en BottomNav cuando hay no leídas. |
-| 🟢 Baja | Fix datos de prueba (acentos) | Re-insertar desde Supabase dashboard con encoding correcto. |
+| 🟡 Media | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
+| 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato con CELO real |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
-| 🟢 Baja | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
-| 🟢 Baja | Deploy Vercel | Conectar repo, configurar env vars, dominio. |
+| 🟢 Baja | Registro automático de usuario | Crear user en Supabase al primer login con MiniPay (actualmente manual) |
 
 ---
 
@@ -224,7 +224,14 @@ C:\opi\Predikta\
 - **MiniMax** es Anthropic-compatible (no OpenAI-compatible) para tool calling.
 - **marketId on-chain** = `keccak256(UUID de Supabase)` — linkea on-chain con off-chain sin oracle.
 - **Foundry PATH**: agregar `export PATH="$PATH:/c/Users/demo/.foundry/bin"` en cada sesión bash nueva.
-- **MiniPay wallet**: no usar botón "Conectar" — auto-connect con `window.ethereum.request({ method: 'eth_requestAccounts' })` al montar el componente.
+- **MiniPay wallet**: no usar botón "Conectar" — auto-connect con Wagmi `useAccount` + conector `injected`. NO usar `useConnection` (no existe en Wagmi v2).
+- **market_status enum**: pending, approved, active, closed, resolved, rejected, cancelled. Sin `needs_review`.
+- **moderation_status enum**: pending, auto_approved, needs_review, auto_rejected. Sin `approved`/`rejected`.
+- **Mercado apostable**: `status === 'approved' || status === 'active'` — recién aprobados son 'approved', no 'active'.
+- **createMarket on-chain**: debe llamarse desde `adminUpdateMarket` al aprobar, ANTES de actualizar Supabase. Si ya existe on-chain, ignorar el error `Market already exists`.
+- **Celo Sepolia tokens**: ningún stablecoin conocido existe. Usar TestToken deployado: `0x7cc8b6e9fe615490db19a89991042fe1976d1832`.
+- **tsconfig target**: debe ser ES2020 para BigInt literals (`0n`).
+- **Wallet lowercase**: siempre `.toLowerCase()` antes de queries a Supabase. MiniPay devuelve mixed case.
 - **USDm decimals**: 18. USDC/USDT: 6. El contrato lo maneja transparentemente con SafeERC20.
 
 ---
