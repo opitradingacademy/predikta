@@ -24,13 +24,25 @@ export default function ProfilePage() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    const wallet = (window as unknown as { ethereum?: { selectedAddress?: string } }).ethereum?.selectedAddress
-    if (!wallet) { setLoading(false); return }
+    async function init() {
+      const eth = (window as unknown as { ethereum?: { selectedAddress?: string; request?: (a: { method: string }) => Promise<string[]> } }).ethereum
+      if (!eth) { setLoading(false); return }
 
-    setIsAdmin(wallet.toLowerCase() === ADMIN_WALLET)
-    getUserProfile(wallet)
-      .then(({ data }) => { if (data) setData(data as ProfileData) })
-      .finally(() => setLoading(false))
+      let wallet = eth.selectedAddress
+      if (!wallet && eth.request) {
+        try {
+          const accounts = await eth.request({ method: 'eth_accounts' })
+          wallet = accounts?.[0] ?? null
+        } catch { /* ignore */ }
+      }
+      if (!wallet) { setLoading(false); return }
+
+      setIsAdmin(wallet.toLowerCase() === ADMIN_WALLET)
+      getUserProfile(wallet)
+        .then(({ data }) => { if (data) setData(data as ProfileData) })
+        .finally(() => setLoading(false))
+    }
+    init()
   }, [])
 
   if (loading) return (
