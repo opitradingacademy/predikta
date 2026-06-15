@@ -9,7 +9,7 @@ import {
   Trophy, Loader2, Wallet, Share2,
 } from 'lucide-react'
 import { parseUnits } from 'viem'
-import { useConnection, useWalletClient } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
 import { ProbabilityBar } from './ProbabilityBar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,7 +84,7 @@ export function MarketDetailClient({ market }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
-  const { address, isConnected } = useConnection()
+  const { address, isConnected } = useAccount()
   const { data: walletClient }   = useWalletClient()
 
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)

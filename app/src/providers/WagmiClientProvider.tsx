@@ -1,6 +1,6 @@
 'use client'
 
-import { WagmiProvider, useConnect, useConnection } from 'wagmi'
+import { WagmiProvider, useConnect, useAccount } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { wagmiConfig } from '@/lib/wagmi/config'
 import { useEffect } from 'react'
@@ -9,7 +9,7 @@ const queryClient = new QueryClient()
 
 function MiniPayAutoConnect() {
   const { connect, connectors } = useConnect()
-  const { isConnected } = useConnection()
+  const { isConnected } = useAccount()
 
   useEffect(() => {
     if (isConnected) return
