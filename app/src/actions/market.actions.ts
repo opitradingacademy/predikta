@@ -311,14 +311,27 @@ export async function adminUpdateMarket(marketId: string, action: 'approve' | 'r
         const closeTimestamp = BigInt(Math.floor(new Date(market.close_date).getTime() / 1000))
         const optionCount = (market.options?.length ?? 2) as number
 
-        await resolverClient.writeContract({
+        // Verificar si ya existe on-chain
+        const onChain = await publicClient.readContract({
           address: CONTRACT_ADDRESS,
           abi: PREDIKTA_ABI,
-          functionName: 'createMarket',
-          args: [bytes32Id, tokenAddress, optionCount, closeTimestamp],
-        })
+          functionName: 'getMarket',
+          args: [bytes32Id],
+        }) as { closeDate: bigint }
+
+        if (!onChain.closeDate || onChain.closeDate === 0n) {
+          await resolverClient.writeContract({
+            address: CONTRACT_ADDRESS,
+            abi: PREDIKTA_ABI,
+            functionName: 'createMarket',
+            args: [bytes32Id, tokenAddress, optionCount, closeTimestamp],
+          })
+        }
       } catch (e) {
-        return { error: `Error on-chain: ${(e as Error).message}` }
+        const msg = (e as Error).message
+        if (!msg.includes('Market already exists')) {
+          return { error: `Error on-chain: ${msg}` }
+        }
       }
     }
   }
