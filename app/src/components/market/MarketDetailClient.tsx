@@ -103,7 +103,7 @@ export function MarketDetailClient({ market }: Props) {
     if (typeof window === 'undefined' || !window.ethereum) return
     const load = async () => {
       try {
-        const accounts: string[] = await window.ethereum.request({ method: 'eth_requestAccounts' })
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[]
         if (accounts[0]) setMiniPayAddress(accounts[0].toLowerCase() as `0x${string}`)
       } catch { /* silencioso */ }
     }
