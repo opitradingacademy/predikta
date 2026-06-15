@@ -56,7 +56,7 @@ export async function createMarket(input: CreateMarketInput) {
   try {
     moderation = await moderateMarket(input.title, input.description, input.resolutionSourceUrl)
   } catch {
-    moderation = { categoria: 'NEEDS_REVIEW', razon: 'Moderación automática no disponible' }
+    moderation = { categoria: 'NEEDS_REVIEW' as const, razon: 'Moderación automática no disponible' }
   }
 
   if (moderation.categoria === 'AUTO_REJECT') {
@@ -85,7 +85,7 @@ export async function createMarket(input: CreateMarketInput) {
       resolution_source_url: input.resolutionSourceUrl,
       image_url: input.imageUrl,
       token: input.token ?? 'USDm',
-      moderation_status: moderation.categoria === 'AUTO_APPROVE' ? 'auto_approved' : 'needs_review',
+      moderation_status: moderation.categoria === 'AUTO_APPROVE' ? 'auto_approved' : 'pending',
       moderation_reason: moderation.razon,
       status: moderation.categoria === 'AUTO_APPROVE' ? 'approved' : 'pending',
     })
