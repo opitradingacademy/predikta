@@ -128,11 +128,11 @@ const TOKENS_MAINNET = {
   USDT: '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e' as `0x${string}`,
 }
 
-// Tokens Celo Sepolia (testnet)
+// Tokens Celo Sepolia (testnet) — tUSDm minteable para testing
 const TOKENS_SEPOLIA = {
-  USDm: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' as `0x${string}`, // cUSD testnet
-  USDC: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' as `0x${string}`, // usar cUSD como fallback
-  USDT: '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' as `0x${string}`,
+  USDm: '0x7cc8b6e9fe615490db19a89991042fe1976d1832' as `0x${string}`,
+  USDC: '0x7cc8b6e9fe615490db19a89991042fe1976d1832' as `0x${string}`,
+  USDT: '0x7cc8b6e9fe615490db19a89991042fe1976d1832' as `0x${string}`,
 }
 
 export const TOKENS = isMainnet ? TOKENS_MAINNET : TOKENS_SEPOLIA
