@@ -119,7 +119,7 @@ export function MarketDetailClient({ market }: Props) {
     if (typeof window === 'undefined' || !window.ethereum) return null
     return createWalletClient({
       account: address,
-      chain: celoSepolia as typeof celoAlfajores,
+      chain: celoSepolia as unknown as typeof celoAlfajores,
       transport: custom(window.ethereum),
     })
   }
