@@ -192,24 +192,24 @@ C:\opi\Predikta\
 | Componentes UI | ProbabilityBar, MarketCard, BottomNav, TrustScore, MarketDetailClient |
 | Páginas | Home, Explore, Create, Profile, Market/[id], Admin, Ranking, Notifications |
 | Deploy | GitHub: opitradingacademy/predikta · Vercel: predikta-eight.vercel.app |
-| Wagmi + MiniPay | Auto-connect con `useAccount` (Wagmi v2). Chain: Celo Sepolia 11142220 |
+| Wagmi + MiniPay | Fallback directo a `window.ethereum` cuando Wagmi no conecta. Chain: Celo Sepolia 11142220 |
 | Contrato deployado | Celo Sepolia: `0xa468ba20dd8AB475a8d78d0cF2ec7Cf334ECEBA4` |
 | Token de prueba | TestToken (tUSDm): `0x7cc8b6e9fe615490db19a89991042fe1976d1832` en Celo Sepolia |
 | Flujo aprobación | Admin aprueba → registra on-chain → status approved → apostable |
 | Botón Admin | Visible en /profile solo para wallet admin |
+| **Flujo apuesta** | ✅ **Funcionando end-to-end en MiniPay** — participations registra en Supabase |
 
 ### 🔲 Pendiente MVP
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🔴 Alta | Flujo apuesta completo | Verificar que useAccount conecta en MiniPay y apuesta funciona end-to-end |
-| 🔴 Alta | Botón Admin en /profile | Aparece solo si wallet === ADMIN_WALLET (0x5288ac...) — pendiente verificar en MiniPay |
-| 🟡 Media | Supabase Real-time en `/market/[id]` | Ya implementado, verificar que funciona |
+| 🔴 Alta | Registro automático de usuario | Crear user en Supabase al primer login con MiniPay (actualmente manual) |
+| 🔴 Alta | Flujo resolución de mercado | Admin resuelve → on-chain → ganadores pueden reclamar |
+| 🟡 Media | Botón Admin en /profile | Verificar que aparece en MiniPay (wallet === 0x5288ac...) |
 | 🟡 Media | Notificaciones in-app | Leer tabla `notifications`. Indicador en BottomNav cuando hay no leídas. |
 | 🟡 Media | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
-| 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato con CELO real |
+| 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
-| 🟢 Baja | Registro automático de usuario | Crear user en Supabase al primer login con MiniPay (actualmente manual) |
 
 ---
 
@@ -233,6 +233,9 @@ C:\opi\Predikta\
 - **tsconfig target**: debe ser ES2020 para BigInt literals (`0n`).
 - **Wallet lowercase**: siempre `.toLowerCase()` antes de queries a Supabase. MiniPay devuelve mixed case.
 - **USDm decimals**: 18. USDC/USDT: 6. El contrato lo maneja transparentemente con SafeERC20.
+- **Wagmi no auto-conecta en MiniPay** (primer acceso, sin sesión previa). Solución en `MarketDetailClient`: fallback con `eth_requestAccounts` + `createWalletClient({ transport: custom(window.ethereum) })`. `window.ethereum.request` devuelve `unknown` → castear `as string[]`. `window.ethereum` es posiblemente undefined según TS → usar `!`.
+- **MiniPay usa Celo Mainnet por defecto**. Para testnet: Settings → Developer → Test Networks. Sin esto da error "chain mismatch (42220 vs 11142220)".
+- **chain type mismatch en viem**: al pasar celoSepolia donde se espera celoAlfajores, usar `as unknown as typeof celoAlfajores`.
 
 ---
 
