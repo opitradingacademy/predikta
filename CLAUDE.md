@@ -213,6 +213,7 @@ C:\opi\Predikta\
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
+| 🔴 Alta | Moderación automática funcional | MiniMax tool calling devuelve AUTO_APPROVE pero el mercado queda en `pending`. Verificar que `adminUpdateMarket` se llame automáticamente cuando `moderation.categoria === 'AUTO_APPROVE'` en `createMarket`. |
 | 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
 
