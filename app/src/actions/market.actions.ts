@@ -181,6 +181,18 @@ export async function resolveMarket(marketId: string, winningOptionId: string, r
       .neq('option_id', winningOptionId)
       .eq('status', 'confirmed')
 
+    // 5. Incrementar total_markets_won de cada ganador
+    const { data: winners } = await supabase
+      .from('participations')
+      .select('user_id')
+      .eq('market_id', marketId)
+      .eq('status', 'won')
+
+    for (const w of winners ?? []) {
+      const { data: u } = await supabase.from('users').select('total_markets_won').eq('id', w.user_id).single()
+      if (u) await supabase.from('users').update({ total_markets_won: u.total_markets_won + 1 }).eq('id', w.user_id)
+    }
+
     revalidatePath(`/market/${marketId}`)
     revalidatePath('/')
     revalidatePath('/explore')
