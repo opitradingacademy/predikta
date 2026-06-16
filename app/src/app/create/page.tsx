@@ -198,15 +198,38 @@ export default function CreatePage() {
 
         {/* Fecha de cierre */}
         <div className="space-y-2">
-          <Label className="text-white/70">Fecha de cierre</Label>
-          <Input
-            type="datetime-local"
-            value={form.closeDate}
-            onChange={(e) => setForm({ ...form, closeDate: e.target.value })}
-            required
-            min={new Date(Date.now() + 3_600_000).toISOString().slice(0, 16)}
-            className="bg-white/5 border-white/10 text-white"
-          />
+          <Label className="text-white/70">¿Cuándo cierra la apuesta?</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: '1 hora',   ms: 1 * 60 * 60 * 1000 },
+              { label: '6 horas',  ms: 6 * 60 * 60 * 1000 },
+              { label: '1 día',    ms: 24 * 60 * 60 * 1000 },
+              { label: '3 días',   ms: 3 * 24 * 60 * 60 * 1000 },
+              { label: '1 semana', ms: 7 * 24 * 60 * 60 * 1000 },
+              { label: '1 mes',    ms: 30 * 24 * 60 * 60 * 1000 },
+            ].map(({ label, ms }) => {
+              const val = new Date(Date.now() + ms).toISOString().slice(0, 16)
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setForm({ ...form, closeDate: val })}
+                  className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                    form.closeDate === val
+                      ? 'bg-violet-600 border-violet-500 text-white'
+                      : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
+          {form.closeDate && (
+            <p className="text-xs text-white/30 text-center">
+              Cierra el {new Date(form.closeDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+            </p>
+          )}
         </div>
 
         <Button
