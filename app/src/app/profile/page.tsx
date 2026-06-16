@@ -31,7 +31,7 @@ export default function ProfilePage() {
       let wallet = eth.selectedAddress
       if (!wallet && eth.request) {
         try {
-          const accounts = await eth.request({ method: 'eth_accounts' })
+          const accounts = await eth.request({ method: 'eth_requestAccounts' }) as string[]
           wallet = accounts?.[0] ?? null
         } catch { /* ignore */ }
       }
