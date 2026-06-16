@@ -37,7 +37,8 @@ export default function AdminPage() {
         ? Promise.all([
             getMarkets({ status: 'approved', limit: 30 }),
             getMarkets({ status: 'active', limit: 30 }),
-          ]).then(([a, b]) => ({ data: [...(a.data ?? []), ...(b.data ?? [])] }))
+            getMarkets({ status: 'closed', limit: 30 }),
+          ]).then(([a, b, c]) => ({ data: [...(a.data ?? []), ...(b.data ?? []), ...(c.data ?? [])] }))
         : getMarkets({ status: statusFilter, limit: 30 }),
     ]).then(([s, m]) => {
       if (s.data) setStats(s.data)
