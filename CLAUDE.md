@@ -237,10 +237,10 @@ C:\opi\Predikta\
 - **USDm decimals**: 18. USDC/USDT: 6. El contrato lo maneja transparentemente con SafeERC20.
 - **Wagmi no auto-conecta en MiniPay** (primer acceso, sin sesión previa). Solución en `MarketDetailClient`: fallback con `eth_requestAccounts` + `createWalletClient({ transport: custom(window.ethereum) })`. `window.ethereum.request` devuelve `unknown` → castear `as string[]`. `window.ethereum` es posiblemente undefined según TS → usar `!`.
 - **Auto-registro usuario**: `upsertUser(wallet)` debe llamarse al inicio de `createMarket` y `participateMarket`. Es no-op si ya existe. Sin esto, usuarios nuevos reciben "usuario no encontrado".
-- **NEXT_PUBLIC_TREASURY_ADDRESS**: debe estar en `.env.local` Y en Vercel para que los referidos on-chain funcionen. Wallet admin: `0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b`. Sin esta variable, el bloque de referidos se saltea silenciosamente.
+- **NEXT_PUBLIC_TREASURY_ADDRESS**: debe estar en `.env.local` Y en Vercel para que los referidos on-chain funcionen. Wallet admin: `0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b`. Sin esta variable, el bloque de referidos se saltea silenciosamente. ✅ Configurado en Vercel.
 - **FK ambigua en resolveMarket**: `options(*)` falla si hay múltiples FKs. Usar siempre `options!options_market_id_fkey(*)`.
 - **Admin "Resolver" carga approved + active**: el tab resolve debe traer ambos status, no solo `approved`.
-- **Home filtra solo approved + active**: nunca mostrar `resolved`, `cancelled`, `pending`, `rejected`.
+- **Home filtra solo approved + active**: nunca mostrar `resolved`, `cancelled`, `pending`, `rejected`. `resolveMarket` debe llamar `revalidatePath('/')` y `revalidatePath('/explore')` — sin esto la caché no se invalida al resolver.
 - **Contrato: resolveMarket requiere `block.timestamp >= closeDate`**: no se puede resolver antes de que pase la fecha. Para testing usar cierre en 30m–1h.
 - **Limpiar Supabase para testing**: `UPDATE markets SET resolved_option_id = NULL` PRIMERO, luego DELETE en orden: participations → resolutions → trust_score_history → notifications → rankings → markets → options.
 - **Claim flow**: `userParticipation.status` determina qué ve el usuario en mercado resuelto: `won` → botón claim, `claimed` → banner "ya reclamadas", `lost` → mensaje aliento, null → nada.
