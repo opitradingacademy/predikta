@@ -6,7 +6,7 @@ import { uuidToBytes32, CONTRACT_ADDRESS, PREDIKTA_ABI, TOKENS, getResolverClien
 import type { MarketCategory, ResolutionSource, TokenType } from '@/types'
 import { revalidatePath } from 'next/cache'
 import { isAddress } from 'viem'
-import { upsertUser } from './user.actions'
+import { upsertUser, createNotification } from './user.actions'
 
 const ADMIN_ADDRESS = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS ?? process.env.TREASURY_ADDRESS ?? '') as `0x${string}`
 
@@ -181,17 +181,25 @@ export async function resolveMarket(marketId: string, winningOptionId: string, r
       .neq('option_id', winningOptionId)
       .eq('status', 'confirmed')
 
-    // 5. Incrementar total_markets_won de cada ganador
-    const { data: winners } = await supabase
+    // 5. Incrementar total_markets_won + notificar ganadores y perdedores
+    const { data: allParticipants } = await supabase
       .from('participations')
-      .select('user_id')
+      .select('user_id, status')
       .eq('market_id', marketId)
-      .eq('status', 'won')
+      .in('status', ['won', 'lost'])
 
-    for (const w of winners ?? []) {
-      const { data: u } = await supabase.from('users').select('total_markets_won').eq('id', w.user_id).single()
-      if (u) await supabase.from('users').update({ total_markets_won: u.total_markets_won + 1 }).eq('id', w.user_id)
+    for (const p of allParticipants ?? []) {
+      if (p.status === 'won') {
+        const { data: u } = await supabase.from('users').select('total_markets_won').eq('id', p.user_id).single()
+        if (u) await supabase.from('users').update({ total_markets_won: u.total_markets_won + 1 }).eq('id', p.user_id)
+        await createNotification(p.user_id, 'participation_won', '¡Ganaste! 🏆', `Elegiste la opción ganadora en "${market.title}". ¡Reclamá tus ganancias!`, marketId)
+      } else {
+        await createNotification(p.user_id, 'participation_lost', 'Esta no fue 😔', `El mercado "${market.title}" se resolvió. ¡Mejor suerte la próxima!`, marketId)
+      }
     }
+
+    // Notificar al creador que su mercado fue resuelto
+    await createNotification(market.creator_id, 'market_resolved', 'Mercado resuelto 🏁', `Tu mercado "${market.title}" fue resuelto con la opción "${winningOption.label}".`, marketId)
 
     revalidatePath(`/market/${marketId}`)
     revalidatePath('/')
@@ -363,6 +371,16 @@ export async function adminUpdateMarket(marketId: string, action: 'approve' | 'r
 
   const { error } = await supabase.from('markets').update(updates).eq('id', marketId)
   if (error) return { error: error.message }
+
+  // Notificar al creador
+  const { data: mkt } = await supabase.from('markets').select('title, creator_id').eq('id', marketId).single()
+  if (mkt) {
+    if (action === 'approve') {
+      await createNotification(mkt.creator_id, 'market_approved', '¡Mercado aprobado! ✅', `Tu mercado "${mkt.title}" fue aprobado y ya está activo.`, marketId)
+    } else {
+      await createNotification(mkt.creator_id, 'market_rejected', 'Mercado rechazado', `Tu mercado "${mkt.title}" fue rechazado. ${reason ?? ''}`.trim(), marketId)
+    }
+  }
 
   revalidatePath('/admin')
   revalidatePath('/')

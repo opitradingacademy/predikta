@@ -2,6 +2,12 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
+import type { NotificationType } from '@/types'
+
+export async function createNotification(userId: string, type: NotificationType, title: string, body: string, referenceId?: string) {
+  const supabase = createServiceClient()
+  await supabase.from('notifications').insert({ user_id: userId, type, title, body, reference_id: referenceId ?? null })
+}
 
 export async function upsertUser(walletAddress: string) {
   const supabase = createServiceClient()
@@ -56,6 +62,13 @@ export async function updateTrustScore(
     reference_id: referenceId,
     score_after: newScore,
   })
+
+  await createNotification(
+    userId,
+    'trust_score_changed',
+    delta > 0 ? `Trust Score +${delta} ⚡` : `Trust Score ${delta} ⚡`,
+    `${reason}. Tu nuevo puntaje es ${newScore}.`,
+  )
 
   revalidatePath('/profile')
   return { data: { newScore, level } }
