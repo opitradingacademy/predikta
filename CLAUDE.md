@@ -171,11 +171,12 @@ C:\opi\Predikta\
         │   └── profile/TrustScore     ✅ barra animada
         └── app/
             ├── layout.tsx             ✅ Inter + dark + BottomNav + Toaster
-            ├── page.tsx               ✅ Home (solo approved + active)
+            ├── page.tsx               ✅ Home (solo approved + active) + HomeHeader
             ├── explore/page.tsx       ✅ filtros categoría + search
             ├── create/page.tsx        ✅ formulario + CloseDatePicker días/horas/min
             ├── admin/page.tsx         ✅ pending + resolve (approved+active) + trust
-            └── profile/page.tsx       ✅ stats + badges + historial
+            ├── profile/page.tsx       ✅ stats + badges + historial + botón admin
+            └── notifications/page.tsx ✅ lista con íconos + marca leídas al abrir
 ```
 
 ---
@@ -203,12 +204,13 @@ C:\opi\Predikta\
 | **Auto-registro usuario** | ✅ `upsertUser()` llamado en `createMarket` y `participateMarket` — primer uso crea el user automáticamente |
 | **Flujo resolución + claim** | ✅ Admin resuelve → ganadores ven botón claim → on-chain → Supabase marca `claimed` |
 | **Referidos on-chain** | ✅ Primer mercado → referido del admin (treasury). Primera apuesta → referido del creador |
+| **Notificaciones automáticas** | ✅ `createNotification` helper. Eventos: aprobación, rechazo, resolución, won/lost, trust score |
+| **Bell con badge real-time** | ✅ Header del home. Supabase Realtime. Tab Perfil en BottomNav (reemplazó Alertas) |
 
 ### 🔲 Pendiente MVP
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🟡 Media | Notificaciones in-app | Leer tabla `notifications`. Indicador en BottomNav cuando hay no leídas. |
 | 🟡 Media | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
 | 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
@@ -241,6 +243,9 @@ C:\opi\Predikta\
 - **FK ambigua en resolveMarket**: `options(*)` falla si hay múltiples FKs. Usar siempre `options!options_market_id_fkey(*)`.
 - **Admin "Resolver" carga approved + active**: el tab resolve debe traer ambos status, no solo `approved`.
 - **Home filtra solo approved + active**: nunca mostrar `resolved`, `cancelled`, `pending`, `rejected`. `resolveMarket` debe llamar `revalidatePath('/')` y `revalidatePath('/explore')` — sin esto la caché no se invalida al resolver.
+- **NEXT_PUBLIC_* en Client Components**: se reemplaza en BUILD TIME. Si la variable tiene mixed case y la comparación espera lowercase, va a fallar. Siempre aplicar `.toLowerCase()` al leer del env var. Afectó al botón admin en `/profile`.
+- **BottomNav**: Inicio · Explorar · Crear · Ranking · Perfil. Bell de notificaciones está en el header del home (`HomeHeader.tsx`), no en el nav.
+- **total_markets_won**: debe incrementarse en `resolveMarket` al marcar participaciones como `won`. No se actualiza automáticamente.
 - **Contrato: resolveMarket requiere `block.timestamp >= closeDate`**: no se puede resolver antes de que pase la fecha. Para testing usar cierre en 30m–1h.
 - **Limpiar Supabase para testing**: `UPDATE markets SET resolved_option_id = NULL` PRIMERO, luego DELETE en orden: participations → resolutions → trust_score_history → notifications → rankings → markets → options.
 - **Claim flow**: `userParticipation.status` determina qué ve el usuario en mercado resuelto: `won` → botón claim, `claimed` → banner "ya reclamadas", `lost` → mensaje aliento, null → nada.
