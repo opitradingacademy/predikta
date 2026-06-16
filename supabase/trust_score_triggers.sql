@@ -46,13 +46,13 @@ BEGIN
   IF OLD.status = NEW.status THEN RETURN NEW; END IF;
 
   IF NEW.status = 'approved' THEN
-    PERFORM adjust_trust_score(NEW.creator_id, 2, 'Mercado aprobado', NEW.id);
+    PERFORM adjust_trust_score(NEW.creator_id, 2, 'market_approved', NEW.id);
 
   ELSIF NEW.status = 'rejected' THEN
-    PERFORM adjust_trust_score(NEW.creator_id, -10, 'Mercado rechazado', NEW.id);
+    PERFORM adjust_trust_score(NEW.creator_id, -10, 'market_rejected', NEW.id);
 
   ELSIF NEW.status = 'resolved' THEN
-    PERFORM adjust_trust_score(NEW.creator_id, 3, 'Mercado resuelto exitosamente', NEW.id);
+    PERFORM adjust_trust_score(NEW.creator_id, 3, 'market_resolved', NEW.id);
   END IF;
 
   RETURN NEW;
@@ -74,7 +74,7 @@ BEGIN
   IF OLD.status = NEW.status THEN RETURN NEW; END IF;
 
   IF NEW.status = 'won' THEN
-    PERFORM adjust_trust_score(NEW.user_id, 2, 'Predicción correcta', NEW.market_id);
+    PERFORM adjust_trust_score(NEW.user_id, 2, 'market_successful', NEW.market_id);
   END IF;
 
   RETURN NEW;
