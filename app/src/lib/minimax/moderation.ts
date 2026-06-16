@@ -78,13 +78,17 @@ export async function moderateMarket(
   })
 
   if (!response.ok) {
-    throw new Error(`MiniMax API error: ${response.status}`)
+    const body = await response.text()
+    throw new Error(`MiniMax API error: ${response.status} — ${body}`)
   }
 
   const data = await response.json()
+
+  // MiniMax Anthropic-compatible: content array con type: 'tool_use'
   const toolUse = data.content?.find((c: { type: string }) => c.type === 'tool_use')
 
   if (!toolUse?.input) {
+    console.error('[moderation] MiniMax raw response:', JSON.stringify(data, null, 2))
     throw new Error('MiniMax did not return tool_use response')
   }
 

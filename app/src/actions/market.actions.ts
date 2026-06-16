@@ -86,7 +86,8 @@ export async function createMarket(input: CreateMarketInput) {
   let moderation: { categoria: 'AUTO_APPROVE' | 'NEEDS_REVIEW' | 'AUTO_REJECT'; razon: string }
   try {
     moderation = await moderateMarket(input.title, input.description, input.resolutionSourceUrl)
-  } catch {
+  } catch (e) {
+    console.error('[createMarket] MiniMax moderation failed:', (e as Error).message)
     moderation = { categoria: 'NEEDS_REVIEW' as const, razon: 'Moderación automática no disponible' }
   }
 
