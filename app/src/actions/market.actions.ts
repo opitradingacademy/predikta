@@ -130,7 +130,7 @@ export async function resolveMarket(marketId: string, winningOptionId: string, r
   // 1. Obtener datos del mercado
   const { data: market } = await supabase
     .from('markets')
-    .select('*, options(*)')
+    .select('*, options!options_market_id_fkey(*)')
     .eq('id', marketId)
     .single()
 
