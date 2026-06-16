@@ -26,7 +26,7 @@ BEGIN
   ELSE v_level := 'nuevo';
   END IF;
 
-  UPDATE users SET trust_score = v_new, level = v_level WHERE id = p_user_id;
+  UPDATE users SET trust_score = v_new, level = v_level::user_level WHERE id = p_user_id;
 
   INSERT INTO trust_score_history (user_id, delta, reason, reference_id, score_after)
   VALUES (p_user_id, p_delta, p_reason, p_ref_id, v_new);
