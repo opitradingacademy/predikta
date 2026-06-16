@@ -206,12 +206,13 @@ C:\opi\Predikta\
 | **Referidos on-chain** | ✅ Primer mercado → referido del admin (treasury). Primera apuesta → referido del creador |
 | **Notificaciones automáticas** | ✅ `createNotification` helper. Eventos: aprobación, rechazo, resolución, won/lost, trust score |
 | **Bell con badge real-time** | ✅ Header del home. Supabase Realtime. Tab Perfil en BottomNav (reemplazó Alertas) |
+| **Trust Score automático** | ✅ Triggers Supabase. +2 aprobado, -10 rechazado, +3 resuelto, +2 ganado. `supabase/trust_score_triggers.sql` |
+| **Auto-cierre mercados vencidos** | ✅ pg_cron cada minuto (testing) / hora (prod). pending→cancelled, approved/active→closed. `supabase/market_status_cron.sql` |
 
 ### 🔲 Pendiente MVP
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🟡 Media | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
 | 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
 
@@ -251,6 +252,9 @@ C:\opi\Predikta\
 - **Claim flow**: `userParticipation.status` determina qué ve el usuario en mercado resuelto: `won` → botón claim, `claimed` → banner "ya reclamadas", `lost` → mensaje aliento, null → nada.
 - **MiniPay usa Celo Mainnet por defecto**. Para testnet: Settings → Developer → Test Networks. Sin esto da error "chain mismatch (42220 vs 11142220)".
 - **chain type mismatch en viem**: al pasar celoSepolia donde se espera celoAlfajores, usar `as unknown as typeof celoAlfajores`.
+- **ENUMs en triggers Supabase**: `level` es `user_level`, `reason` es `trust_reason` — siempre castear con `::user_level` y `::trust_reason`. Valores válidos de trust_reason: market_approved, market_resolved, market_successful, time_active, identity_verified, market_rejected, report_confirmed, misleading_content, fraud.
+- **pg_cron en testing**: usar `'* * * * *'` para cada minuto. Producción: `'0 * * * *'`. Para cambiar: `cron.unschedule('nombre-job')` + recrear.
+- **Admin tab Resolver**: carga approved + active + closed — los tres estados apostables o listos para resolver.
 
 ---
 
