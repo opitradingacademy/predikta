@@ -30,30 +30,22 @@ TÍTULO: ${title}
 DESCRIPCIÓN: ${description}
 FUENTE DE VERIFICACIÓN: ${sourceUrl ?? 'No especificada'}
 
-REGLAS DE CLASIFICACIÓN:
-
-AUTO_REJECT si contiene:
+CONTENIDO PROHIBIDO — AUTO_REJECT si contiene cualquiera de estos:
 - Datos personales o información privada de individuos
-- Contenido sobre salud o condición médica individual
+- Salud o condición médica individual
 - Violencia, amenazas o incitación al odio
+- Suicidio o autolesión
 - Contenido sexual o para adultos
 - Difamación o calumnias sobre personas reales
 - Actividades ilegales
 - Información privilegiada o insider trading
-- Es imposible de verificar objetivamente
+- Resultado imposible de verificar objetivamente
 
-NEEDS_REVIEW si:
-- Tiene potencial político sensible
-- Involucra a personas públicas de forma no obvia
-- La fuente de verificación es dudosa o no está clara
-- El resultado podría ser manipulable
+NEEDS_REVIEW solo si hay ambigüedad real sobre si viola algún punto anterior. Si el mercado claramente NO viola ninguno, NO uses NEEDS_REVIEW.
 
-AUTO_APPROVE si:
-- Es sobre eventos deportivos locales verificables
-- Es sobre fenómenos climáticos o naturales
-- Es sobre resultados institucionales públicos
-- Es claramente comunitario y verificable
-- No viola ninguna regla anterior
+AUTO_APPROVE si el mercado no viola ningún punto del contenido prohibido. Ejemplos: deportes, política electoral pública, clima, economía, entretenimiento, cultura, tecnología, cualquier evento público verificable.
+
+La mayoría de los mercados deben ser AUTO_APPROVE. Sé restrictivo solo con contenido claramente prohibido.
 
 Clasificá el mercado usando la función clasificar_mercado.`
 }
