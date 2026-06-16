@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { ShieldCheck } from 'lucide-react'
 import type { User, UserBadge, Participation } from '@/types'
 
-const ADMIN_WALLET = '0x5288acfd5c2371f880b4a2bbee8af647bd9a051b'
+const ADMIN_WALLET = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS ?? '').toLowerCase()
 
 interface ProfileData {
   user: User
