@@ -1,5 +1,6 @@
 import { getMarkets } from '@/actions/market.actions'
 import { MarketCard } from '@/components/market/MarketCard'
+import { HomeHeader } from '@/components/layout/HomeHeader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Suspense } from 'react'
 import type { Market } from '@/types'
@@ -56,13 +57,7 @@ function MarketsSkeleton() {
 export default function HomePage() {
   return (
     <div className="px-4 pt-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">
-          Predikta <span className="text-violet-400">🔮</span>
-        </h1>
-        <p className="text-sm text-white/40 mt-0.5">¿Qué va a pasar?</p>
-      </div>
+      <HomeHeader />
 
       <Suspense fallback={<MarketsSkeleton />}>
         <FeaturedMarkets />
