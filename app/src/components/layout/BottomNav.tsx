@@ -9,11 +9,11 @@ import { createClient } from '@/lib/supabase/client'
 import { getUnreadCount } from '@/actions/user.actions'
 
 const LINKS = [
-  { href: '/',               label: 'Inicio',   icon: Home,       notif: false },
-  { href: '/explore',        label: 'Explorar', icon: Compass,    notif: false },
-  { href: '/create',         label: 'Crear',    icon: PlusCircle, notif: false },
-  { href: '/ranking',        label: 'Ranking',  icon: Trophy,     notif: false },
-  { href: '/notifications',  label: 'Alertas',  icon: Bell,       notif: true  },
+  { href: '/',        label: 'Inicio',   icon: Home,       notif: false },
+  { href: '/explore', label: 'Explorar', icon: Compass,    notif: false },
+  { href: '/create',  label: 'Crear',    icon: PlusCircle, notif: false },
+  { href: '/ranking', label: 'Ranking',  icon: Trophy,     notif: false },
+  { href: '/profile', label: 'Perfil',   icon: User,       notif: false },
 ]
 
 export function BottomNav() {

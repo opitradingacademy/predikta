@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [data, setData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [detectedWallet, setDetectedWallet] = useState<string | null>(null)
 
   useEffect(() => {
     async function init() {
@@ -37,6 +38,7 @@ export default function ProfilePage() {
       }
       if (!wallet) { setLoading(false); return }
 
+      setDetectedWallet(wallet)
       setIsAdmin(wallet.toLowerCase() === ADMIN_WALLET)
       getUserProfile(wallet)
         .then(({ data }) => {
@@ -64,6 +66,9 @@ export default function ProfilePage() {
       <div>
         <p className="text-4xl mb-2">👛</p>
         <p className="text-sm">Conectá tu wallet en MiniPay para ver tu perfil.</p>
+        {detectedWallet && (
+          <p className="text-[10px] font-mono mt-2 text-white/30 break-all">{detectedWallet}</p>
+        )}
       </div>
       {isAdmin && (
         <button
