@@ -67,7 +67,7 @@ function CloseDatePicker({ value, onChange }: { value: string; onChange: (v: str
 
   return (
     <div className="space-y-3">
-      <Label className="text-white/70">¿Cuándo cierra la apuesta?</Label>
+      <Label className="text-white/70">¿Cuándo cierra la predicción?</Label>
       <div className="flex gap-1.5">
         {presets.map(p => (
           <button

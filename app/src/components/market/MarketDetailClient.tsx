@@ -218,7 +218,7 @@ export function MarketDetailClient({ market }: Props) {
         account: address,
       })
 
-      toast.loading('Enviando apuesta...', { id: 'bet' })
+      toast.loading('Enviando participación...', { id: 'bet' })
       const txHash = await client.writeContract({
         address: CONTRACT_ADDRESS,
         abi: PREDIKTA_ABI,
@@ -240,7 +240,7 @@ export function MarketDetailClient({ market }: Props) {
         if (result.error) {
           toast.error(result.error, { id: 'bet' })
         } else {
-          toast.success(`¡Apostaste ${amount} ${market.token} en "${option.label}"!`, { id: 'bet' })
+          toast.success(`¡Participaste con ${amount} ${market.token} en "${option.label}"!`, { id: 'bet' })
           setSelectedOptionId(null)
           setAmount('')
         }
@@ -382,13 +382,13 @@ export function MarketDetailClient({ market }: Props) {
           />
           {isActive && !selectedOptionId && isConnected && (
             <p className="text-xs text-white/30 text-center mt-3">
-              Tocá una opción para apostar
+              Tocá una opción para participar
             </p>
           )}
           {isActive && !isConnected && !isConnecting && (
             <div className="mt-3 rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-2 text-white/40">
               <Wallet className="w-4 h-4 shrink-0" />
-              <p className="text-xs">Abrí esta app en MiniPay para apostar</p>
+              <p className="text-xs">Abrí esta app en MiniPay para participar</p>
             </div>
           )}
           {isConnecting && (
@@ -411,7 +411,7 @@ export function MarketDetailClient({ market }: Props) {
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-white">
-                  Apostar en: <span className="text-violet-300">{selectedOption?.label}</span>
+                  Participar en: <span className="text-violet-300">{selectedOption?.label}</span>
                 </p>
                 <button
                   onClick={() => setSelectedOptionId(null)}
@@ -461,12 +461,12 @@ export function MarketDetailClient({ market }: Props) {
                 {isBetting || isPending ? (
                   <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Procesando...</>
                 ) : (
-                  `Apostar ${amount ? `${amount} ${market.token}` : ''}`
+                  `Participar${amount ? ` con ${amount} ${market.token}` : ''}`
                 )}
               </Button>
 
               <p className="text-[10px] text-white/30 text-center">
-                Se solicitarán 2 transacciones: aprobación + apuesta
+                Se solicitarán 2 transacciones: aprobación + participación
               </p>
             </motion.div>
           )}
