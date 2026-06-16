@@ -30,22 +30,21 @@ TÍTULO: ${title}
 DESCRIPCIÓN: ${description}
 FUENTE DE VERIFICACIÓN: ${sourceUrl ?? 'No especificada'}
 
-CONTENIDO PROHIBIDO — AUTO_REJECT si contiene cualquiera de estos:
-- Datos personales o información privada de individuos
+AUTO_REJECT solo si contiene contenido explícitamente dañino:
+- Datos personales o información privada de individuos específicos
 - Salud o condición médica individual
 - Violencia, amenazas o incitación al odio
 - Suicidio o autolesión
 - Contenido sexual o para adultos
-- Difamación o calumnias sobre personas reales
-- Actividades ilegales
+- Difamación o calumnias sobre personas reales identificables
+- Actividades ilegales (drogas, armas, fraude)
 - Información privilegiada o insider trading
-- Resultado imposible de verificar objetivamente
 
-NEEDS_REVIEW solo si hay ambigüedad real sobre si viola algún punto anterior. Si el mercado claramente NO viola ninguno, NO uses NEEDS_REVIEW.
+NEEDS_REVIEW si el contenido no es dañino pero tiene dudas menores (fuente poco clara, descripción vaga, tema político sensible). El administrador humano lo revisa.
 
-AUTO_APPROVE si el mercado no viola ningún punto del contenido prohibido. Ejemplos: deportes, política electoral pública, clima, economía, entretenimiento, cultura, tecnología, cualquier evento público verificable.
+AUTO_APPROVE si no aplica ninguna causa de AUTO_REJECT. La mayoría de los mercados deben ser AUTO_APPROVE: deportes, clima, política electoral, economía, entretenimiento, cultura, tecnología, eventos locales, predicciones cotidianas.
 
-La mayoría de los mercados deben ser AUTO_APPROVE. Sé restrictivo solo con contenido claramente prohibido.
+IMPORTANTE: La falta de fuente de verificación o descripción vaga NO es motivo de AUTO_REJECT, como máximo es NEEDS_REVIEW.
 
 Clasificá el mercado usando la función clasificar_mercado.`
 }
