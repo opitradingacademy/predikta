@@ -53,9 +53,20 @@ export default function ProfilePage() {
   )
 
   if (!data) return (
-    <div className="px-4 pt-16 text-center text-white/40">
-      <p className="text-4xl mb-2">👛</p>
-      <p className="text-sm">Conectá tu wallet en MiniPay para ver tu perfil.</p>
+    <div className="px-4 pt-16 text-center text-white/40 space-y-4">
+      <div>
+        <p className="text-4xl mb-2">👛</p>
+        <p className="text-sm">Conectá tu wallet en MiniPay para ver tu perfil.</p>
+      </div>
+      {isAdmin && (
+        <button
+          onClick={() => router.push('/admin')}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600/20 border border-violet-500/30 py-3 text-sm font-semibold text-violet-300 hover:bg-violet-600/30 transition-colors"
+        >
+          <ShieldCheck className="w-4 h-4" />
+          Panel de administración
+        </button>
+      )}
     </div>
   )
 
