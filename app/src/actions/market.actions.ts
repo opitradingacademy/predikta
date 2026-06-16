@@ -182,6 +182,8 @@ export async function resolveMarket(marketId: string, winningOptionId: string, r
       .eq('status', 'confirmed')
 
     revalidatePath(`/market/${marketId}`)
+    revalidatePath('/')
+    revalidatePath('/explore')
     return { data: { txHash: hash } }
   } catch (e) {
     return { error: `Error on-chain: ${(e as Error).message}` }
