@@ -31,6 +31,92 @@ const RESOLUTION_SOURCES: { value: ResolutionSource; label: string }[] = [
   { value: 'comunitario',   label: '🤝 Verificación comunitaria' },
 ]
 
+function CloseDatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [days, setDays]       = useState('')
+  const [hours, setHours]     = useState('')
+  const [minutes, setMinutes] = useState('')
+
+  function apply(d: string, h: string, m: string) {
+    const total =
+      (parseInt(d) || 0) * 24 * 60 * 60 * 1000 +
+      (parseInt(h) || 0) * 60 * 60 * 1000 +
+      (parseInt(m) || 0) * 60 * 1000
+    if (total <= 0) { onChange(''); return }
+    onChange(new Date(Date.now() + total).toISOString().slice(0, 16))
+  }
+
+  function setPreset(ms: number) {
+    const d = Math.floor(ms / (24 * 60 * 60 * 1000))
+    const h = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+    const m = Math.floor((ms % (60 * 60 * 1000)) / 60000)
+    const ds = d ? String(d) : ''
+    const hs = h ? String(h) : ''
+    const ms2 = m ? String(m) : ''
+    setDays(ds); setHours(hs); setMinutes(ms2)
+    apply(ds, hs, ms2)
+  }
+
+  const presets = [
+    { label: '30m', ms: 30 * 60 * 1000 },
+    { label: '1h',  ms: 60 * 60 * 1000 },
+    { label: '6h',  ms: 6 * 60 * 60 * 1000 },
+    { label: '1d',  ms: 24 * 60 * 60 * 1000 },
+    { label: '3d',  ms: 3 * 24 * 60 * 60 * 1000 },
+    { label: '7d',  ms: 7 * 24 * 60 * 60 * 1000 },
+  ]
+
+  return (
+    <div className="space-y-3">
+      <Label className="text-white/70">¿Cuándo cierra la apuesta?</Label>
+      <div className="flex gap-1.5">
+        {presets.map(p => (
+          <button
+            key={p.label}
+            type="button"
+            onClick={() => setPreset(p.ms)}
+            className="flex-1 py-2 rounded-xl text-xs font-medium border bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: 'Días',    val: days,    set: setDays,    max: 365, placeholder: '0' },
+          { label: 'Horas',   val: hours,   set: setHours,   max: 23,  placeholder: '0' },
+          { label: 'Minutos', val: minutes, set: setMinutes, max: 59,  placeholder: '0' },
+        ].map(({ label, val, set, max, placeholder }) => (
+          <div key={label} className="space-y-1">
+            <p className="text-[10px] text-white/40 text-center">{label}</p>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={max}
+              placeholder={placeholder}
+              value={val}
+              onChange={e => {
+                set(e.target.value)
+                apply(
+                  label === 'Días'    ? e.target.value : days,
+                  label === 'Horas'   ? e.target.value : hours,
+                  label === 'Minutos' ? e.target.value : minutes,
+                )
+              }}
+              className="w-full text-center bg-white/5 border border-white/10 text-white rounded-xl py-2.5 text-lg font-bold focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+          </div>
+        ))}
+      </div>
+      {value && (
+        <p className="text-xs text-white/30 text-center">
+          Cierra el {new Date(value).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function CreatePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -197,40 +283,10 @@ export default function CreatePage() {
         </div>
 
         {/* Fecha de cierre */}
-        <div className="space-y-2">
-          <Label className="text-white/70">¿Cuándo cierra la apuesta?</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: '1 hora',   ms: 1 * 60 * 60 * 1000 },
-              { label: '6 horas',  ms: 6 * 60 * 60 * 1000 },
-              { label: '1 día',    ms: 24 * 60 * 60 * 1000 },
-              { label: '3 días',   ms: 3 * 24 * 60 * 60 * 1000 },
-              { label: '1 semana', ms: 7 * 24 * 60 * 60 * 1000 },
-              { label: '1 mes',    ms: 30 * 24 * 60 * 60 * 1000 },
-            ].map(({ label, ms }) => {
-              const val = new Date(Date.now() + ms).toISOString().slice(0, 16)
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => setForm({ ...form, closeDate: val })}
-                  className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                    form.closeDate === val
-                      ? 'bg-violet-600 border-violet-500 text-white'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-          {form.closeDate && (
-            <p className="text-xs text-white/30 text-center">
-              Cierra el {new Date(form.closeDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-            </p>
-          )}
-        </div>
+        <CloseDatePicker
+          value={form.closeDate}
+          onChange={(v) => setForm({ ...form, closeDate: v })}
+        />
 
         <Button
           type="submit"
