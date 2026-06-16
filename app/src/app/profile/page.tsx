@@ -37,12 +37,16 @@ export default function ProfilePage() {
       }
       if (!wallet) { setLoading(false); return }
 
-      console.log('[Predikta] wallet detected:', wallet)
-      console.log('[Predikta] ADMIN_WALLET:', ADMIN_WALLET)
-      console.log('[Predikta] isAdmin match:', wallet.toLowerCase() === ADMIN_WALLET)
       setIsAdmin(wallet.toLowerCase() === ADMIN_WALLET)
       getUserProfile(wallet)
-        .then(({ data }) => { if (data) setData(data as ProfileData) })
+        .then(({ data }) => {
+          if (data) {
+            setData(data as ProfileData)
+            // También verificar desde Supabase como fallback
+            const profileWallet = (data as ProfileData).user?.wallet_address?.toLowerCase()
+            if (profileWallet === ADMIN_WALLET) setIsAdmin(true)
+          }
+        })
         .finally(() => setLoading(false))
     }
     init()
@@ -145,7 +149,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {isAdmin && (
+      {(isAdmin || user.wallet_address.toLowerCase() === ADMIN_WALLET) && (
         <button
           onClick={() => router.push('/admin')}
           className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600/20 border border-violet-500/30 py-3 text-sm font-semibold text-violet-300 hover:bg-violet-600/30 transition-colors"
