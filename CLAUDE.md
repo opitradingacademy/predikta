@@ -190,7 +190,7 @@ C:\opi\Predikta\
 | Base de datos | 12 tablas, 14 ENUMs, índices, triggers, RLS en Supabase |
 | Smart Contract | `PrediktaMarket.sol` — 11/11 tests. Fees, pools, claim, refund. |
 | Scaffold Next.js 16 | App Router + shadcn/ui + Framer Motion + Viem + Supabase |
-| Moderación IA | MiniMax tool calling forzado (`AUTO_APPROVE/NEEDS_REVIEW/AUTO_REJECT`) con fallback a `pending` si falla |
+| Moderación IA | ✅ **Funcionando en producción**. URL: `api.minimax.io/anthropic/v1/messages`. Requiere `MM-GroupId` header + system message para forzar tool use. AUTO_APPROVE → registra on-chain automáticamente. NEEDS_REVIEW → admin recibe notificación. |
 | Server Actions | Crear mercado (con moderación), resolver, listar, perfil, trust score, aprobar on-chain |
 | Componentes UI | ProbabilityBar, MarketCard, BottomNav, TrustScore, MarketDetailClient |
 | Páginas | Home, Explore, Create, Profile, Market/[id], Admin, Ranking, Notifications |
@@ -204,16 +204,16 @@ C:\opi\Predikta\
 | **Auto-registro usuario** | ✅ `upsertUser()` llamado en `createMarket` y `participateMarket` — primer uso crea el user automáticamente |
 | **Flujo resolución + claim** | ✅ Admin resuelve → ganadores ven botón claim → on-chain → Supabase marca `claimed` |
 | **Referidos on-chain** | ✅ Primer mercado → referido del admin (treasury). Primera apuesta → referido del creador |
-| **Notificaciones automáticas** | ✅ `createNotification` helper. Eventos: aprobación, rechazo, resolución, won/lost, trust score |
+| **Notificaciones automáticas** | ✅ `createNotification` helper. Eventos: aprobación, rechazo, resolución, won/lost, trust score, **market_pending** (creador + admin cuando queda en revisión manual) |
 | **Bell con badge real-time** | ✅ Header del home. Supabase Realtime. Tab Perfil en BottomNav (reemplazó Alertas) |
 | **Trust Score automático** | ✅ Triggers Supabase. +2 aprobado, -10 rechazado, +3 resuelto, +2 ganado. `supabase/trust_score_triggers.sql` |
 | **Auto-cierre mercados vencidos** | ✅ pg_cron cada minuto (testing) / hora (prod). pending→cancelled, approved/active→closed. `supabase/market_status_cron.sql` |
+| **Countdown tiempo restante** | ✅ MarketCard y MarketDetailClient muestran `Xd Xh Xm`, se refresca cada 30s con `useTimeLeft` hook |
 
 ### 🔲 Pendiente MVP
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🔴 Alta | Moderación automática funcional | MiniMax tool calling devuelve AUTO_APPROVE pero el mercado queda en `pending`. Verificar que `adminUpdateMarket` se llame automáticamente cuando `moderation.categoria === 'AUTO_APPROVE'` en `createMarket`. |
 | 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
 
@@ -227,7 +227,8 @@ C:\opi\Predikta\
 - **Bash heredoc pierde UTF-8**: Los inserts SQL vía bash/jq pierden acentos en español. Para datos de prueba usar el dashboard de Supabase o psql con `PGCLIENTENCODING=UTF8`. No afecta producción.
 - **Supabase Management API** requiere PAT (`sbp_...`), no la service role key, para DDL.
 - **jq escaping**: usar `jq -n --arg q "$SQL" '{"query": $q}'` para SQL con newlines y comillas simples.
-- **MiniMax** es Anthropic-compatible (no OpenAI-compatible) para tool calling.
+- **MiniMax API**: URL correcta `https://api.minimax.io/anthropic/v1/messages`. Requiere header `MM-GroupId`. Sin system message forzando el tool use, el modelo responde con texto libre ignorando `tool_choice`. No dejar `MINIMAX_BASE_URL` en Vercel — pisaría el default correcto con la URL vieja.
+- **Cambiar env vars en Vercel no redeploya**: hay que hacer redeploy manual o `git commit --allow-empty && git push`.
 - **marketId on-chain** = `keccak256(UUID de Supabase)` — linkea on-chain con off-chain sin oracle.
 - **Foundry PATH**: agregar `export PATH="$PATH:/c/Users/demo/.foundry/bin"` en cada sesión bash nueva.
 - **MiniPay wallet**: no usar botón "Conectar" — auto-connect con Wagmi `useAccount` + conector `injected`. NO usar `useConnection` (no existe en Wagmi v2).
@@ -272,9 +273,9 @@ NEXT_PUBLIC_CHAIN_ID=42220
 NEXT_PUBLIC_PREDIKTA_CONTRACT=<dirección post-deploy en Alfajores/Mainnet>
 RESOLVER_PRIVATE_KEY=<wallet que actúa como resolver del contrato>
 
-# MiniMax
+# MiniMax (URL hardcodeada en código — NO configurar MINIMAX_BASE_URL en Vercel)
 MINIMAX_API_KEY=<tu API key de MiniMax>
-MINIMAX_BASE_URL=https://api.minimax.chat/v1
+MINIMAX_GROUP_ID=2047224044209582897
 ```
 
 ---
