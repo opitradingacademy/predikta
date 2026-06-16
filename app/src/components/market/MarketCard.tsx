@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Clock, Users, TrendingUp } from 'lucide-react'
@@ -18,12 +19,25 @@ const CATEGORY_LABELS: Record<string, string> = {
   otros: '✨ Otros',
 }
 
-function timeLeft(closeDate: string): string {
+function formatTimeLeft(closeDate: string): string {
   const diff = new Date(closeDate).getTime() - Date.now()
   if (diff <= 0) return 'Cerrado'
-  const hours = Math.floor(diff / 3_600_000)
-  if (hours < 24) return `${hours}h restantes`
-  return `${Math.floor(hours / 24)}d restantes`
+  const totalMinutes = Math.floor(diff / 60_000)
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
+function useTimeLeft(closeDate: string) {
+  const [label, setLabel] = useState(() => formatTimeLeft(closeDate))
+  useEffect(() => {
+    const id = setInterval(() => setLabel(formatTimeLeft(closeDate)), 30_000)
+    return () => clearInterval(id)
+  }, [closeDate])
+  return label
 }
 
 interface MarketCardProps {
@@ -34,6 +48,7 @@ interface MarketCardProps {
 export function MarketCard({ market, index = 0 }: MarketCardProps) {
   const options = market.options ?? []
   const participants = options.reduce((acc, o) => acc + (o.total_staked > 0 ? 1 : 0), 0)
+  const timeLeft = useTimeLeft(market.close_date)
 
   return (
     <motion.div
@@ -83,7 +98,7 @@ export function MarketCard({ market, index = 0 }: MarketCardProps) {
             </div>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              {timeLeft(market.close_date)}
+              {timeLeft}
             </span>
           </div>
         </div>
