@@ -70,12 +70,25 @@ const SOURCE_LABELS: Record<string, string> = {
   comunitario:   '🤝 Verificación comunitaria',
 }
 
-function timeLeft(closeDate: string): string {
+function formatTimeLeft(closeDate: string): string {
   const diff = new Date(closeDate).getTime() - Date.now()
   if (diff <= 0) return 'Cerrado'
-  const hours = Math.floor(diff / 3_600_000)
-  if (hours < 24) return `${hours}h restantes`
-  return `${Math.floor(hours / 24)}d restantes`
+  const totalMinutes = Math.floor(diff / 60_000)
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
+function useTimeLeft(closeDate: string) {
+  const [label, setLabel] = useState(() => formatTimeLeft(closeDate))
+  useEffect(() => {
+    const id = setInterval(() => setLabel(formatTimeLeft(closeDate)), 30_000)
+    return () => clearInterval(id)
+  }, [closeDate])
+  return label
 }
 
 function formatDate(iso: string): string {
@@ -91,6 +104,7 @@ interface Props {
 export function MarketDetailClient({ market }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const timeLeft = useTimeLeft(market.close_date)
 
   const { address: wagmiAddress, isConnected: wagmiConnected, isConnecting } = useAccount()
   const { data: wagmiWalletClient } = useWalletClient()
@@ -319,7 +333,7 @@ export function MarketDetailClient({ market }: Props) {
           </div>
           <div className="rounded-xl bg-white/5 border border-white/8 p-3 text-center">
             <Clock className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-            <p className="text-sm font-bold text-white">{timeLeft(market.close_date)}</p>
+            <p className="text-sm font-bold text-white">{timeLeft}</p>
             <p className="text-[10px] text-white/40">{formatDate(market.close_date)}</p>
           </div>
           <div className="rounded-xl bg-white/5 border border-white/8 p-3 text-center">
