@@ -5,8 +5,10 @@ import { Suspense } from 'react'
 import type { Market } from '@/types'
 
 async function FeaturedMarkets() {
-  const { data: featured } = await getMarkets({ featured: true, limit: 3 })
-  const { data: recent }   = await getMarkets({ limit: 10 })
+  const { data: featured } = await getMarkets({ featured: true, status: 'approved', limit: 3 })
+  const { data: active }   = await getMarkets({ status: 'active', limit: 10 })
+  const { data: approved } = await getMarkets({ status: 'approved', limit: 10 })
+  const recent = [...(active ?? []), ...(approved ?? [])].slice(0, 10)
 
   return (
     <div className="space-y-6">
