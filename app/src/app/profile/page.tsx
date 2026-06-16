@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import { ShieldCheck } from 'lucide-react'
 import type { User, UserBadge, Participation } from '@/types'
 
-const ADMIN_WALLET = '0x5288acfd5c2371f880b4a2bbee8af647bd9a051b'
+const ADMIN_WALLET = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS ?? '0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b').toLowerCase()
 
 interface ProfileData {
   user: User
@@ -37,6 +37,9 @@ export default function ProfilePage() {
       }
       if (!wallet) { setLoading(false); return }
 
+      console.log('[Predikta] wallet detected:', wallet)
+      console.log('[Predikta] ADMIN_WALLET:', ADMIN_WALLET)
+      console.log('[Predikta] isAdmin match:', wallet.toLowerCase() === ADMIN_WALLET)
       setIsAdmin(wallet.toLowerCase() === ADMIN_WALLET)
       getUserProfile(wallet)
         .then(({ data }) => { if (data) setData(data as ProfileData) })
