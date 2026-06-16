@@ -355,6 +355,50 @@ export async function adminUpdateMarket(marketId: string, action: 'approve' | 'r
   return { data: true }
 }
 
+export async function getUserParticipation(marketId: string, walletAddress: string) {
+  const supabase = createServiceClient()
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('wallet_address', walletAddress.toLowerCase())
+    .single()
+
+  if (!user) return { data: null }
+
+  const { data } = await supabase
+    .from('participations')
+    .select('id, option_id, amount, status, token')
+    .eq('market_id', marketId)
+    .eq('user_id', user.id)
+    .single()
+
+  return { data: data ?? null }
+}
+
+export async function markParticipationClaimed(marketId: string, walletAddress: string) {
+  const supabase = createServiceClient()
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('wallet_address', walletAddress.toLowerCase())
+    .single()
+
+  if (!user) return { error: 'Usuario no encontrado' }
+
+  await supabase
+    .from('participations')
+    .update({ status: 'claimed' })
+    .eq('market_id', marketId)
+    .eq('user_id', user.id)
+    .eq('status', 'won')
+
+  revalidatePath(`/market/${marketId}`)
+  revalidatePath('/profile')
+  return { data: true }
+}
+
 export async function getMarkets(filters: {
   category?: string
   status?: string

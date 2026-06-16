@@ -15,7 +15,7 @@ import { ProbabilityBar } from './ProbabilityBar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { participateMarket } from '@/actions/market.actions'
+import { participateMarket, getUserParticipation, markParticipationClaimed } from '@/actions/market.actions'
 import { TOKENS, PREDIKTA_ABI, CONTRACT_ADDRESS, uuidToBytes32 } from '@/lib/contracts/predikta'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -128,6 +128,16 @@ export function MarketDetailClient({ market }: Props) {
   const [amount, setAmount]                     = useState('')
   const [isBetting, setIsBetting]               = useState(false)
   const [isClaiming, setIsClaiming]             = useState(false)
+
+  // Participation del usuario en este mercado
+  const [userParticipation, setUserParticipation] = useState<{
+    id: string; option_id: string; amount: number; status: string; token: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (!address) return
+    getUserParticipation(market.id, address).then(({ data }) => setUserParticipation(data))
+  }, [address, market.id])
 
   const [liveMarket, setLiveMarket] = useState(market)
   const [liveOptions, setLiveOptions] = useState(market.options ?? [])
@@ -244,6 +254,8 @@ export function MarketDetailClient({ market }: Props) {
         args: [uuidToBytes32(market.id)],
         account: address,
       })
+      await markParticipationClaimed(market.id, address)
+      setUserParticipation(prev => prev ? { ...prev, status: 'claimed' } : prev)
       toast.success('¡Ganancias reclamadas!', { id: 'claim' })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -446,8 +458,8 @@ export function MarketDetailClient({ market }: Props) {
           )}
         </AnimatePresence>
 
-        {/* Botón de reclamo */}
-        {isResolved && (
+        {/* Botón de reclamo — solo para ganadores que no reclamaron */}
+        {isResolved && userParticipation?.status === 'won' && (
           <Button
             onClick={handleClaim}
             disabled={isClaiming}
@@ -459,6 +471,17 @@ export function MarketDetailClient({ market }: Props) {
               <><Trophy className="w-4 h-4 mr-2" /> Reclamar mis ganancias</>
             )}
           </Button>
+        )}
+        {isResolved && userParticipation?.status === 'claimed' && (
+          <div className="w-full rounded-xl bg-emerald-500/10 border border-emerald-500/20 h-12 flex items-center justify-center gap-2">
+            <Trophy className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm text-emerald-400 font-medium">Ganancias ya reclamadas</span>
+          </div>
+        )}
+        {isResolved && userParticipation?.status === 'lost' && (
+          <div className="w-full rounded-xl bg-white/5 border border-white/8 h-12 flex items-center justify-center">
+            <span className="text-sm text-white/40">No ganaste esta vez — ¡seguí intentando!</span>
+          </div>
         )}
 
         {/* Info de verificación */}
