@@ -6,6 +6,7 @@ import { uuidToBytes32, CONTRACT_ADDRESS, PREDIKTA_ABI, TOKENS, getResolverClien
 import type { MarketCategory, ResolutionSource, TokenType } from '@/types'
 import { revalidatePath } from 'next/cache'
 import { isAddress } from 'viem'
+import { upsertUser } from './user.actions'
 
 const ADMIN_ADDRESS = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS ?? process.env.TREASURY_ADDRESS ?? '') as `0x${string}`
 
@@ -63,14 +64,16 @@ export async function createMarket(input: CreateMarketInput) {
     return { error: `Mercado rechazado: ${moderation.razon}` }
   }
 
-  // 2. Obtener creator
+  // 2. Obtener o crear creator (auto-registro en primer uso)
+  await upsertUser(input.creatorWallet.toLowerCase())
+
   const { data: creator } = await supabase
     .from('users')
     .select('id, trust_score, total_markets_created')
     .eq('wallet_address', input.creatorWallet.toLowerCase())
     .single()
 
-  if (!creator) return { error: 'Usuario no encontrado' }
+  if (!creator) return { error: 'Error al registrar usuario' }
 
   // 3. Insertar mercado en Supabase
   const { data: market, error } = await supabase
@@ -208,13 +211,16 @@ export async function participateMarket(input: {
 }) {
   const supabase = createServiceClient()
 
+  // Auto-registro si es la primera vez que apuesta
+  await upsertUser(input.walletAddress.toLowerCase())
+
   const { data: user } = await supabase
     .from('users')
     .select('id')
     .eq('wallet_address', input.walletAddress.toLowerCase())
     .single()
 
-  if (!user) return { error: 'Usuario no encontrado. Creá tu perfil primero.' }
+  if (!user) return { error: 'Error al registrar usuario' }
 
   // Registrar referido: quien apuesta se convierte en referido del creador del mercado
   const { data: mktCreator } = await supabase
