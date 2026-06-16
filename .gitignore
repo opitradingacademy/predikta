@@ -1,3 +1,6 @@
+# Test scripts con secrets
+test-minimax.mjs
+
 # Dependencies
 node_modules/
 

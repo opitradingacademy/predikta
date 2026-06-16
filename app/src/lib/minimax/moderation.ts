@@ -1,27 +1,25 @@
 import type { ModerationResult } from '@/types'
 
-const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL ?? 'https://api.minimax.chat/v1'
+const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL ?? 'https://api.minimax.io/anthropic/v1'
+const MINIMAX_GROUP_ID = process.env.MINIMAX_GROUP_ID ?? ''
 
 const MODERATION_TOOL = {
-  type: 'function' as const,
-  function: {
-    name: 'clasificar_mercado',
-    description: 'Clasifica un mercado de predicción según las políticas de Predikta',
-    parameters: {
-      type: 'object',
-      properties: {
-        categoria: {
-          type: 'string',
-          enum: ['AUTO_APPROVE', 'NEEDS_REVIEW', 'AUTO_REJECT'],
-          description: 'Clasificación del mercado',
-        },
-        razon: {
-          type: 'string',
-          description: 'Explicación breve de la clasificación',
-        },
+  name: 'clasificar_mercado',
+  description: 'Clasifica un mercado de predicción según las políticas de Predikta',
+  input_schema: {
+    type: 'object',
+    properties: {
+      categoria: {
+        type: 'string',
+        enum: ['AUTO_APPROVE', 'NEEDS_REVIEW', 'AUTO_REJECT'],
+        description: 'Clasificación del mercado',
       },
-      required: ['categoria', 'razon'],
+      razon: {
+        type: 'string',
+        description: 'Explicación breve de la clasificación',
+      },
     },
+    required: ['categoria', 'razon'],
   },
 }
 
@@ -65,17 +63,19 @@ export async function moderateMarket(
   description: string,
   sourceUrl?: string | null
 ): Promise<ModerationResult> {
-  const response = await fetch(`${MINIMAX_BASE_URL}/chat/completions`, {
+  const response = await fetch(`${MINIMAX_BASE_URL}/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${process.env.MINIMAX_API_KEY}`,
+      'MM-GroupId': MINIMAX_GROUP_ID,
     },
     body: JSON.stringify({
       model: 'MiniMax-Text-01',
       max_tokens: 256,
       tools: [MODERATION_TOOL],
-      tool_choice: { type: 'function', function: { name: 'clasificar_mercado' } },
+      tool_choice: { type: 'tool', name: 'clasificar_mercado' },
+      system: 'You MUST always respond by calling the clasificar_mercado function. Never respond with plain text.',
       messages: [{ role: 'user', content: buildPrompt(title, description, sourceUrl) }],
     }),
   })
@@ -86,14 +86,12 @@ export async function moderateMarket(
   }
 
   const data = await response.json()
+  const toolUse = data.content?.find((c: { type: string }) => c.type === 'tool_use')
 
-  // OpenAI-compatible response format
-  const toolCall = data.choices?.[0]?.message?.tool_calls?.[0]
-  if (!toolCall?.function?.arguments) {
+  if (!toolUse?.input) {
     console.error('[moderation] MiniMax raw response:', JSON.stringify(data, null, 2))
-    throw new Error('MiniMax did not return tool_call response')
+    throw new Error('MiniMax did not return tool_use response')
   }
 
-  const parsed = JSON.parse(toolCall.function.arguments)
-  return parsed as ModerationResult
+  return toolUse.input as ModerationResult
 }
