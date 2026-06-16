@@ -1,6 +1,6 @@
 import type { ModerationResult } from '@/types'
 
-const MINIMAX_BASE_URL = process.env.MINIMAX_BASE_URL ?? 'https://api.minimax.io/anthropic/v1'
+const MINIMAX_BASE_URL = 'https://api.minimax.io/anthropic/v1'
 const MINIMAX_GROUP_ID = process.env.MINIMAX_GROUP_ID ?? ''
 
 const MODERATION_TOOL = {
