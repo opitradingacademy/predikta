@@ -195,37 +195,57 @@ export default function AdminPage() {
                   <Gavel className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   <p className="text-sm">Sin mercados para resolver.</p>
                 </div>
-              ) : markets.map(m => (
-                <div key={m.id} className="rounded-2xl bg-white/5 border border-white/8 p-4 space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-white leading-snug">{m.title}</p>
-                    <p className="text-xs text-white/40 mt-0.5">Pool: {m.pool_total} {m.token}</p>
+              ) : markets.map(m => {
+                const isClosed = new Date(m.close_date) <= new Date()
+                const timeLeft = (() => {
+                  const diff = new Date(m.close_date).getTime() - Date.now()
+                  if (diff <= 0) return null
+                  const h = Math.floor(diff / 3600000)
+                  const min = Math.floor((diff % 3600000) / 60000)
+                  return h > 0 ? `${h}h ${min}m` : `${min}m`
+                })()
+                return (
+                  <div key={m.id} className="rounded-2xl bg-white/5 border border-white/8 p-4 space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold text-white leading-snug">{m.title}</p>
+                      <p className="text-xs text-white/40 mt-0.5">Pool: {m.pool_total} {m.token}</p>
+                      {!isClosed && timeLeft && (
+                        <div className="flex items-center gap-1 mt-1.5 text-yellow-400/80">
+                          <Clock className="w-3 h-3 shrink-0" />
+                          <p className="text-xs">Cierra en {timeLeft} — no se puede resolver aún</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      {(m.options ?? []).map(opt => (
+                        <button
+                          key={opt.id}
+                          onClick={() => isClosed && setResolveSelections(prev => ({ ...prev, [m.id]: opt.id }))}
+                          disabled={!isClosed}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-sm border transition-all ${
+                            !isClosed
+                              ? 'bg-white/3 border-white/5 text-white/30 cursor-not-allowed'
+                              : resolveSelections[m.id] === opt.id
+                              ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-300'
+                              : 'bg-white/5 border-white/8 text-white/70 hover:bg-white/10'
+                          }`}
+                        >
+                          {opt.label} <span className="text-xs text-white/40 ml-1">({opt.probability}%)</span>
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleResolve(m)}
+                      disabled={isPending || !resolveSelections[m.id] || !isClosed}
+                      className="w-full bg-violet-600 hover:bg-violet-500 text-white rounded-xl h-9 text-xs disabled:opacity-40"
+                    >
+                      <Gavel className="w-3.5 h-3.5 mr-1" />
+                      {isClosed ? 'Resolver mercado' : `Disponible en ${timeLeft ?? '...'}`}
+                    </Button>
                   </div>
-                  <div className="space-y-1.5">
-                    {(m.options ?? []).map(opt => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setResolveSelections(prev => ({ ...prev, [m.id]: opt.id }))}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-sm border transition-all ${
-                          resolveSelections[m.id] === opt.id
-                            ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-300'
-                            : 'bg-white/5 border-white/8 text-white/70 hover:bg-white/10'
-                        }`}
-                      >
-                        {opt.label} <span className="text-xs text-white/40 ml-1">({opt.probability}%)</span>
-                      </button>
-                    ))}
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleResolve(m)}
-                    disabled={isPending || !resolveSelections[m.id]}
-                    className="w-full bg-violet-600 hover:bg-violet-500 text-white rounded-xl h-9 text-xs"
-                  >
-                    <Gavel className="w-3.5 h-3.5 mr-1" /> Resolver mercado
-                  </Button>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 
