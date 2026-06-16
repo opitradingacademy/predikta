@@ -10,6 +10,36 @@ import { upsertUser, createNotification } from './user.actions'
 
 const ADMIN_ADDRESS = (process.env.NEXT_PUBLIC_TREASURY_ADDRESS ?? process.env.TREASURY_ADDRESS ?? '') as `0x${string}`
 
+async function registerMarketOnChain(marketId: string, token: string, closeDate: string, optionCount: number): Promise<{ error?: string }> {
+  try {
+    const resolverClient = getResolverClient()
+    const bytes32Id = uuidToBytes32(marketId)
+    const tokenAddress = TOKENS[token as keyof typeof TOKENS] ?? TOKENS.USDm
+    const closeTimestamp = BigInt(Math.floor(new Date(closeDate).getTime() / 1000))
+
+    const onChain = await publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi: PREDIKTA_ABI,
+      functionName: 'getMarket',
+      args: [bytes32Id],
+    }) as { closeDate: bigint }
+
+    if (!onChain.closeDate || onChain.closeDate === 0n) {
+      await resolverClient.writeContract({
+        address: CONTRACT_ADDRESS,
+        abi: PREDIKTA_ABI,
+        functionName: 'createMarket',
+        args: [bytes32Id, tokenAddress, optionCount as number, closeTimestamp],
+      })
+    }
+    return {}
+  } catch (e) {
+    const msg = (e as Error).message
+    if (msg.includes('Market already exists')) return {}
+    return { error: `Error on-chain: ${msg}` }
+  }
+}
+
 async function registerReferrerIfNeeded(userWallet: `0x${string}`, referrerWallet: `0x${string}`) {
   if (!isAddress(userWallet) || !isAddress(referrerWallet)) return
   if (userWallet.toLowerCase() === referrerWallet.toLowerCase()) return
@@ -116,6 +146,20 @@ export async function createMarket(input: CreateMarketInput) {
   // 6. Usuario nuevo que crea mercado solo → referido del admin (casa)
   if (creator.total_markets_created === 0 && ADMIN_ADDRESS) {
     await registerReferrerIfNeeded(input.creatorWallet as `0x${string}`, ADMIN_ADDRESS)
+  }
+
+  // 7. Si AUTO_APPROVE, registrar on-chain inmediatamente
+  if (moderation.categoria === 'AUTO_APPROVE') {
+    const { error: onChainError } = await registerMarketOnChain(
+      market.id,
+      input.token ?? 'USDm',
+      input.closeDate,
+      input.options.length,
+    )
+    if (onChainError) {
+      // No es fatal — el admin puede re-aprobar manualmente
+      console.error('[createMarket] on-chain registration failed:', onChainError)
+    }
   }
 
   revalidatePath('/')
@@ -324,43 +368,20 @@ export async function adminUpdateMarket(marketId: string, action: 'approve' | 'r
   const supabase = createServiceClient()
 
   if (action === 'approve') {
-    // Registrar mercado on-chain antes de aprobar en Supabase
     const { data: market } = await supabase
       .from('markets')
-      .select('*, options!options_market_id_fkey(*)')
+      .select('id, token, close_date, options!options_market_id_fkey(id)')
       .eq('id', marketId)
       .single()
 
     if (market) {
-      try {
-        const resolverClient = getResolverClient()
-        const bytes32Id = uuidToBytes32(marketId)
-        const tokenAddress = TOKENS[market.token as keyof typeof TOKENS] ?? TOKENS.USDm
-        const closeTimestamp = BigInt(Math.floor(new Date(market.close_date).getTime() / 1000))
-        const optionCount = (market.options?.length ?? 2) as number
-
-        // Verificar si ya existe on-chain
-        const onChain = await publicClient.readContract({
-          address: CONTRACT_ADDRESS,
-          abi: PREDIKTA_ABI,
-          functionName: 'getMarket',
-          args: [bytes32Id],
-        }) as { closeDate: bigint }
-
-        if (!onChain.closeDate || onChain.closeDate === 0n) {
-          await resolverClient.writeContract({
-            address: CONTRACT_ADDRESS,
-            abi: PREDIKTA_ABI,
-            functionName: 'createMarket',
-            args: [bytes32Id, tokenAddress, optionCount, closeTimestamp],
-          })
-        }
-      } catch (e) {
-        const msg = (e as Error).message
-        if (!msg.includes('Market already exists')) {
-          return { error: `Error on-chain: ${msg}` }
-        }
-      }
+      const { error: onChainError } = await registerMarketOnChain(
+        market.id,
+        market.token,
+        market.close_date,
+        (market.options as { id: string }[])?.length ?? 2,
+      )
+      if (onChainError) return { error: onChainError }
     }
   }
 
