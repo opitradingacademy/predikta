@@ -161,18 +161,20 @@ C:\opi\Predikta\
         │   ├── minimax/moderation.ts  ✅ tool calling MiniMax
         │   └── contracts/predikta.ts  ✅ ABI + viem + tokens Celo
         ├── actions/
-        │   ├── market.actions.ts      ✅ crear / resolver / listar
+        │   ├── market.actions.ts      ✅ crear / participar / resolver / claim / listar
         │   └── user.actions.ts        ✅ perfil + trust score
         ├── components/
         │   ├── market/ProbabilityBar  ✅ barras animadas Framer Motion
         │   ├── market/MarketCard      ✅ glassmorphism dark
+        │   ├── market/MarketDetailClient ✅ detalle + apuesta + claim
         │   ├── layout/BottomNav       ✅ nav mobile 5 tabs
         │   └── profile/TrustScore     ✅ barra animada
         └── app/
             ├── layout.tsx             ✅ Inter + dark + BottomNav + Toaster
-            ├── page.tsx               ✅ Home (featured + activos)
+            ├── page.tsx               ✅ Home (solo approved + active)
             ├── explore/page.tsx       ✅ filtros categoría + search
-            ├── create/page.tsx        ✅ formulario completo
+            ├── create/page.tsx        ✅ formulario + CloseDatePicker días/horas/min
+            ├── admin/page.tsx         ✅ pending + resolve (approved+active) + trust
             └── profile/page.tsx       ✅ stats + badges + historial
 ```
 
@@ -196,16 +198,16 @@ C:\opi\Predikta\
 | Contrato deployado | Celo Sepolia: `0xa468ba20dd8AB475a8d78d0cF2ec7Cf334ECEBA4` |
 | Token de prueba | TestToken (tUSDm): `0x7cc8b6e9fe615490db19a89991042fe1976d1832` en Celo Sepolia |
 | Flujo aprobación | Admin aprueba → registra on-chain → status approved → apostable |
-| Botón Admin | Visible en /profile solo para wallet admin |
+| Botón Admin | Visible en /profile solo para wallet admin (`0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b`) |
 | **Flujo apuesta** | ✅ **Funcionando end-to-end en MiniPay** — participations registra en Supabase |
+| **Auto-registro usuario** | ✅ `upsertUser()` llamado en `createMarket` y `participateMarket` — primer uso crea el user automáticamente |
+| **Flujo resolución + claim** | ✅ Admin resuelve → ganadores ven botón claim → on-chain → Supabase marca `claimed` |
+| **Referidos on-chain** | ✅ Primer mercado → referido del admin (treasury). Primera apuesta → referido del creador |
 
 ### 🔲 Pendiente MVP
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🔴 Alta | Registro automático de usuario | Crear user en Supabase al primer login con MiniPay (actualmente manual) |
-| 🔴 Alta | Flujo resolución de mercado | Admin resuelve → on-chain → ganadores pueden reclamar |
-| 🟡 Media | Botón Admin en /profile | Verificar que aparece en MiniPay (wallet === 0x5288ac...) |
 | 🟡 Media | Notificaciones in-app | Leer tabla `notifications`. Indicador en BottomNav cuando hay no leídas. |
 | 🟡 Media | Trust Score automático | Triggers en Supabase al aprobar/rechazar/resolver mercados. |
 | 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
@@ -234,6 +236,14 @@ C:\opi\Predikta\
 - **Wallet lowercase**: siempre `.toLowerCase()` antes de queries a Supabase. MiniPay devuelve mixed case.
 - **USDm decimals**: 18. USDC/USDT: 6. El contrato lo maneja transparentemente con SafeERC20.
 - **Wagmi no auto-conecta en MiniPay** (primer acceso, sin sesión previa). Solución en `MarketDetailClient`: fallback con `eth_requestAccounts` + `createWalletClient({ transport: custom(window.ethereum) })`. `window.ethereum.request` devuelve `unknown` → castear `as string[]`. `window.ethereum` es posiblemente undefined según TS → usar `!`.
+- **Auto-registro usuario**: `upsertUser(wallet)` debe llamarse al inicio de `createMarket` y `participateMarket`. Es no-op si ya existe. Sin esto, usuarios nuevos reciben "usuario no encontrado".
+- **NEXT_PUBLIC_TREASURY_ADDRESS**: debe estar en `.env.local` Y en Vercel para que los referidos on-chain funcionen. Wallet admin: `0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b`. Sin esta variable, el bloque de referidos se saltea silenciosamente.
+- **FK ambigua en resolveMarket**: `options(*)` falla si hay múltiples FKs. Usar siempre `options!options_market_id_fkey(*)`.
+- **Admin "Resolver" carga approved + active**: el tab resolve debe traer ambos status, no solo `approved`.
+- **Home filtra solo approved + active**: nunca mostrar `resolved`, `cancelled`, `pending`, `rejected`.
+- **Contrato: resolveMarket requiere `block.timestamp >= closeDate`**: no se puede resolver antes de que pase la fecha. Para testing usar cierre en 30m–1h.
+- **Limpiar Supabase para testing**: `UPDATE markets SET resolved_option_id = NULL` PRIMERO, luego DELETE en orden: participations → resolutions → trust_score_history → notifications → rankings → markets → options.
+- **Claim flow**: `userParticipation.status` determina qué ve el usuario en mercado resuelto: `won` → botón claim, `claimed` → banner "ya reclamadas", `lost` → mensaje aliento, null → nada.
 - **MiniPay usa Celo Mainnet por defecto**. Para testnet: Settings → Developer → Test Networks. Sin esto da error "chain mismatch (42220 vs 11142220)".
 - **chain type mismatch en viem**: al pasar celoSepolia donde se espera celoAlfajores, usar `as unknown as typeof celoAlfajores`.
 
