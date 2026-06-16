@@ -150,7 +150,36 @@ export async function createMarket(input: CreateMarketInput) {
     await registerReferrerIfNeeded(input.creatorWallet as `0x${string}`, ADMIN_ADDRESS)
   }
 
-  // 7. Si AUTO_APPROVE, registrar on-chain inmediatamente
+  // 7. Notificaciones según resultado de moderación
+  if (moderation.categoria === 'NEEDS_REVIEW') {
+    // Notificar al creador que está en revisión
+    await createNotification(
+      creator.id,
+      'market_pending',
+      'Mercado en revisión ⏳',
+      `Tu mercado "${input.title}" está pendiente de aprobación manual. Te avisaremos cuando sea revisado.`,
+      market.id,
+    )
+    // Notificar al admin
+    if (ADMIN_ADDRESS) {
+      const { data: adminUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('wallet_address', ADMIN_ADDRESS.toLowerCase())
+        .single()
+      if (adminUser) {
+        await createNotification(
+          adminUser.id,
+          'market_pending',
+          'Nuevo mercado pendiente 🔔',
+          `El mercado "${input.title}" requiere revisión manual.`,
+          market.id,
+        )
+      }
+    }
+  }
+
+  // 8. Si AUTO_APPROVE, registrar on-chain inmediatamente
   if (moderation.categoria === 'AUTO_APPROVE') {
     const { error: onChainError } = await registerMarketOnChain(
       market.id,

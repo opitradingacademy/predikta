@@ -5,7 +5,7 @@ export type ResolutionSource = 'deportivo' | 'fuente_publica' | 'meteorologico' 
 export type ModerationStatus = 'pending' | 'auto_approved' | 'needs_review' | 'auto_rejected'
 export type TokenType = 'USDm' | 'USDC' | 'USDT'
 export type ParticipationStatus = 'pending' | 'confirmed' | 'won' | 'lost' | 'refunded'
-export type NotificationType = 'market_approved' | 'market_rejected' | 'market_resolved' | 'participation_won' | 'participation_lost' | 'trust_score_changed' | 'badge_earned' | 'report_confirmed'
+export type NotificationType = 'market_approved' | 'market_rejected' | 'market_resolved' | 'market_pending' | 'participation_won' | 'participation_lost' | 'trust_score_changed' | 'badge_earned' | 'report_confirmed'
 export type RankingPeriod = 'all_time' | 'monthly' | 'weekly'
 
 export interface User {
