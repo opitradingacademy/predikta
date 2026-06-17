@@ -195,9 +195,9 @@ C:\opi\Predikta\
 | Componentes UI | ProbabilityBar, MarketCard, BottomNav, TrustScore, MarketDetailClient |
 | Páginas | Home, Explore, Create, Profile, Market/[id], Admin, Ranking, Notifications |
 | Deploy | GitHub: opitradingacademy/predikta · Vercel: predikta-eight.vercel.app |
-| Wagmi + MiniPay | Fallback directo a `window.ethereum` cuando Wagmi no conecta. Chain: Celo Sepolia 11142220 |
-| Contrato deployado | Celo Sepolia: `0xa468ba20dd8AB475a8d78d0cF2ec7Cf334ECEBA4` |
-| Token de prueba | TestToken (tUSDm): `0x7cc8b6e9fe615490db19a89991042fe1976d1832` en Celo Sepolia |
+| Wagmi + MiniPay | Fallback directo a `window.ethereum` cuando Wagmi no conecta. Chain: Celo Mainnet 42220 |
+| **Contrato deployado** | **Celo Mainnet: `0xbB1ca478A4F6113213f52cC8697a90fD06f0C182`** |
+| Resolver wallet | `0xA3A12179Fc298998e256Efd0754764cfEa220100` — wallet que firma txs on-chain desde Server Actions |
 | Flujo aprobación | Admin aprueba → registra on-chain → status approved → apostable |
 | Botón Admin | Visible en /profile solo para wallet admin (`0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b`) |
 | **Flujo apuesta** | ✅ **Funcionando end-to-end en MiniPay** — participations registra en Supabase |
@@ -209,12 +209,16 @@ C:\opi\Predikta\
 | **Trust Score automático** | ✅ Triggers Supabase. +2 aprobado, -10 rechazado, +3 resuelto, +2 ganado. `supabase/trust_score_triggers.sql` |
 | **Auto-cierre mercados vencidos** | ✅ pg_cron cada minuto (testing) / hora (prod). pending→cancelled, approved/active→closed. `supabase/market_status_cron.sql` |
 | **Countdown tiempo restante** | ✅ MarketCard y MarketDetailClient muestran `Xd Xh Xm`, se refresca cada 30s con `useTimeLeft` hook |
+| **Labels MiniPay-compliant** | ✅ "apostar/apuesta" → "participar/participación". "¿Cuándo cierra la apuesta?" → "¿Cuándo cierra la predicción?" |
+| **Admin: bloqueo resolve** | ✅ Botón "Resolver" deshabilitado si `close_date` no pasó. Muestra countdown "Disponible en Xh Xm" |
+| **Selector de token** | ✅ Creación de mercado: selector USDm / USDC / USDT. El token queda fijo en el contrato. |
+| **Balance visible** | ✅ Panel de participación muestra balance del token requerido. Aviso rojo + botón deshabilitado si balance=0 |
+| **Migración a Mainnet** | ✅ **Celo Mainnet (42220)**. Contrato: `0xbB1ca478A4F6113213f52cC8697a90fD06f0C182`. Ver `MAINNET_MIGRATION.md` para rollback. |
 
-### 🔲 Pendiente MVP
+### 🔲 Pendiente
 
 | Prioridad | Tarea | Detalle |
 |---|---|---|
-| 🟡 Media | Migración a Mainnet | Cambiar NEXT_PUBLIC_CHAIN_ID=42220, actualizar TOKENS_MAINNET, redeployar contrato |
 | 🟢 Baja | Upload imagen de mercado | Supabase Storage bucket `market-images`. |
 
 ---
@@ -253,10 +257,15 @@ C:\opi\Predikta\
 - **Limpiar Supabase para testing**: `UPDATE markets SET resolved_option_id = NULL` PRIMERO, luego DELETE en orden: participations → resolutions → trust_score_history → notifications → rankings → markets → options.
 - **Claim flow**: `userParticipation.status` determina qué ve el usuario en mercado resuelto: `won` → botón claim, `claimed` → banner "ya reclamadas", `lost` → mensaje aliento, null → nada.
 - **MiniPay usa Celo Mainnet por defecto**. Para testnet: Settings → Developer → Test Networks. Sin esto da error "chain mismatch (42220 vs 11142220)".
-- **chain type mismatch en viem**: al pasar celoSepolia donde se espera celoAlfajores, usar `as unknown as typeof celoAlfajores`.
+- **chain type mismatch en viem**: al pasar celoSepolia donde se espera celoAlfajores, usar `as unknown as typeof celoAlfajores`. En mainnet ya no aplica — usar `celo` de viem/chains directamente.
 - **ENUMs en triggers Supabase**: `level` es `user_level`, `reason` es `trust_reason` — siempre castear con `::user_level` y `::trust_reason`. Valores válidos de trust_reason: market_approved, market_resolved, market_successful, time_active, identity_verified, market_rejected, report_confirmed, misleading_content, fraud.
 - **pg_cron en testing**: usar `'* * * * *'` para cada minuto. Producción: `'0 * * * *'`. Para cambiar: `cron.unschedule('nombre-job')` + recrear.
 - **Admin tab Resolver**: carga approved + active + closed — los tres estados apostables o listos para resolver.
+- **Mainnet deploy — wallets**: la wallet MiniPay (`0x5288...`) y la wallet resolver (`0xA3A1...`) son distintas. CELO para gas va al resolver, no a la MiniPay.
+- **Mainnet deploy — bootstrap gas**: USDT en la wallet no alcanza para gas en Foundry. Fee abstraction solo funciona en txs internas de MiniPay, no en `forge script`. Necesitás CELO nativo en la wallet del resolver.
+- **Token fijo por mercado**: el contrato fija el token al crear (`m.token`). `placeBet` siempre usa ese token — no hay forma de pagar con otro. Si el usuario no tiene el token exacto, la tx revierte con "ERC20: transfer amount exceeds balance".
+- **MiniPay copy rules**: nunca usar "apostar", "apuesta", "gas", "crypto" en strings visibles. Usar "participar", "participación", "network fee", "stablecoin". Identificadores de código pueden quedarse como están.
+- **useEffect orden en React**: un `useEffect` que referencia una variable declarada más abajo con `useState`/`const` falla en TS con "used before declaration". Mover el effect DESPUÉS de la declaración.
 
 ---
 
@@ -270,7 +279,7 @@ SUPABASE_SERVICE_ROLE_KEY=<ya configurado>
 
 # Celo
 NEXT_PUBLIC_CHAIN_ID=42220
-NEXT_PUBLIC_PREDIKTA_CONTRACT=<dirección post-deploy en Alfajores/Mainnet>
+NEXT_PUBLIC_PREDIKTA_CONTRACT=0xbB1ca478A4F6113213f52cC8697a90fD06f0C182
 RESOLVER_PRIVATE_KEY=<wallet que actúa como resolver del contrato>
 
 # MiniMax (URL hardcodeada en código — NO configurar MINIMAX_BASE_URL en Vercel)
@@ -285,13 +294,13 @@ MINIMAX_GROUP_ID=2047224044209582897
 ```
 1. Modelo de datos       ✅ completado
 2. Smart Contracts       ✅ completado (11/11 tests)
-3. Scaffold completo     ✅ completado (0 errores TS, app corriendo con datos reales)
-4. /market/[id] + bet    ← SIGUIENTE (mañana)
-5. Wagmi + MiniPay connect
-6. Deploy Alfajores
-7. /ranking + /admin
-8. Real-time + notificaciones
-9. Deploy Vercel
+3. Scaffold completo     ✅ completado
+4. /market/[id] + bet    ✅ completado
+5. Wagmi + MiniPay connect ✅ completado
+6. Deploy Mainnet        ✅ completado (Celo 42220)
+7. /ranking + /admin     ✅ completado
+8. Real-time + notificaciones ✅ completado
+9. Deploy Vercel         ✅ completado — predikta-eight.vercel.app
 ```
 
 ---
