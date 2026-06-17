@@ -9,7 +9,7 @@ import {
   Trophy, Loader2, Wallet, Share2,
 } from 'lucide-react'
 import { createWalletClient, custom, parseUnits } from 'viem'
-import { celoAlfajores } from 'viem/chains'
+import { celo } from 'viem/chains'
 import { useAccount, useWalletClient } from 'wagmi'
 import { ProbabilityBar } from './ProbabilityBar'
 import { Button } from '@/components/ui/button'
@@ -21,12 +21,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { Market } from '@/types'
 
-const celoSepolia = {
-  ...celoAlfajores,
-  id: 11142220,
-  name: 'Celo Sepolia',
-  rpcUrls: { default: { http: ['https://forno.celo-sepolia.celo-testnet.org'] } },
-} as const
 
 const ERC20_ABI = [
   {
@@ -133,7 +127,7 @@ export function MarketDetailClient({ market }: Props) {
     if (typeof window === 'undefined' || !window.ethereum) return null
     return createWalletClient({
       account: address,
-      chain: celoSepolia as unknown as typeof celoAlfajores,
+      chain: celo,
       transport: custom(window.ethereum),
     })
   }
