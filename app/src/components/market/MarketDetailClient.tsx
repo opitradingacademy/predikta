@@ -8,7 +8,7 @@ import {
   ArrowLeft, Clock, TrendingUp, Users, ExternalLink,
   Trophy, Loader2, Wallet, Share2,
 } from 'lucide-react'
-import { createWalletClient, custom, parseUnits } from 'viem'
+import { createWalletClient, custom, parseUnits, formatUnits } from 'viem'
 import { celo } from 'viem/chains'
 import { useAccount, useWalletClient } from 'wagmi'
 import { ProbabilityBar } from './ProbabilityBar'
@@ -136,6 +136,7 @@ export function MarketDetailClient({ market }: Props) {
   const [amount, setAmount]                     = useState('')
   const [isBetting, setIsBetting]               = useState(false)
   const [isClaiming, setIsClaiming]             = useState(false)
+  const [tokenBalance, setTokenBalance]         = useState<string | null>(null)
 
   // Participation del usuario en este mercado
   const [userParticipation, setUserParticipation] = useState<{
@@ -179,6 +180,22 @@ export function MarketDetailClient({ market }: Props) {
 
     return () => { supabase.removeChannel(channel) }
   }, [market.id])
+
+  useEffect(() => {
+    if (!address) return
+    if (liveMarket.status !== 'active' && liveMarket.status !== 'approved') return
+    const tokenAddress = TOKENS[market.token as keyof typeof TOKENS]
+    const decimals = market.token === 'USDm' ? 18 : 6
+    import('@/lib/contracts/predikta').then(({ publicClient }) => {
+      publicClient.readContract({
+        address: tokenAddress,
+        abi: [{ name: 'balanceOf', type: 'function', inputs: [{ name: '', type: 'address' }], outputs: [{ name: '', type: 'uint256' }], stateMutability: 'view' }] as const,
+        functionName: 'balanceOf',
+        args: [address as `0x${string}`],
+      }).then(bal => setTokenBalance(parseFloat(formatUnits(bal, decimals)).toFixed(2)))
+        .catch(() => {})
+    })
+  }, [address, market.token, liveMarket.status])
 
   const options    = liveOptions
   const isActive   = liveMarket.status === 'active' || liveMarket.status === 'approved'
@@ -416,7 +433,19 @@ export function MarketDetailClient({ market }: Props) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs text-white/50">Monto ({market.token})</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-white/50">Monto ({market.token})</label>
+                  {tokenBalance !== null && (
+                    <span className={`text-xs font-medium ${parseFloat(tokenBalance) === 0 ? 'text-red-400' : 'text-white/40'}`}>
+                      Balance: {tokenBalance} {market.token}
+                    </span>
+                  )}
+                </div>
+                {tokenBalance !== null && parseFloat(tokenBalance) === 0 && (
+                  <div className="rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2">
+                    <p className="text-xs text-red-400">No tenés {market.token} en tu wallet. Necesitás fondos para participar.</p>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Input
                     type="number"
@@ -449,7 +478,7 @@ export function MarketDetailClient({ market }: Props) {
 
               <Button
                 onClick={handleBet}
-                disabled={isBetting || isPending || !amount}
+                disabled={isBetting || isPending || !amount || (tokenBalance !== null && parseFloat(tokenBalance) === 0)}
                 className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white font-semibold h-12 rounded-xl"
               >
                 {isBetting || isPending ? (

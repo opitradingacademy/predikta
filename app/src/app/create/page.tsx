@@ -128,6 +128,7 @@ export default function CreatePage() {
     closeDate: '',
     resolutionSource: '' as ResolutionSource,
     resolutionSourceUrl: '',
+    token: 'USDm' as 'USDm' | 'USDC' | 'USDT',
   })
 
   function addOption() {
@@ -217,6 +218,28 @@ export default function CreatePage() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Token */}
+        <div className="space-y-2">
+          <Label className="text-white/70">Token de participación</Label>
+          <div className="flex gap-2">
+            {(['USDm', 'USDC', 'USDT'] as const).map(t => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setForm({ ...form, token: t })}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                  form.token === t
+                    ? 'bg-violet-600 border-violet-500 text-white'
+                    : 'bg-white/5 border-white/10 text-white/50 hover:text-white/80 hover:bg-white/10'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-white/30">Los participantes deberán tener {form.token} en Celo para unirse.</p>
         </div>
 
         {/* Opciones */}
