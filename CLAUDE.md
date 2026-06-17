@@ -196,8 +196,8 @@ C:\opi\Predikta\
 | Páginas | Home, Explore, Create, Profile, Market/[id], Admin, Ranking, Notifications |
 | Deploy | GitHub: opitradingacademy/predikta · Vercel: predikta-eight.vercel.app |
 | Wagmi + MiniPay | Fallback directo a `window.ethereum` cuando Wagmi no conecta. Chain: Celo Mainnet 42220 |
-| **Contrato deployado** | **Celo Mainnet: `0xbB1ca478A4F6113213f52cC8697a90fD06f0C182`** |
-| Resolver wallet | `0xA3A12179Fc298998e256Efd0754764cfEa220100` — wallet que firma txs on-chain desde Server Actions |
+| **Contrato deployado** | **Celo Mainnet: `0xF9EcfF87833B53594351F2030d4149583B50AC75`** |
+| Resolver wallet | `0xdfc0F35940Df64d1bB46103250b5a8EA99EaDa52` — wallet que firma txs on-chain desde Server Actions |
 | Flujo aprobación | Admin aprueba → registra on-chain → status approved → apostable |
 | Botón Admin | Visible en /profile solo para wallet admin (`0x5288AcFd5c2371f880b4A2BBEE8aF647bD9a051b`) |
 | **Flujo apuesta** | ✅ **Funcionando end-to-end en MiniPay** — participations registra en Supabase |
@@ -213,7 +213,7 @@ C:\opi\Predikta\
 | **Admin: bloqueo resolve** | ✅ Botón "Resolver" deshabilitado si `close_date` no pasó. Muestra countdown "Disponible en Xh Xm" |
 | **Selector de token** | ✅ Creación de mercado: selector USDm / USDC / USDT. El token queda fijo en el contrato. |
 | **Balance visible** | ✅ Panel de participación muestra balance del token requerido. Aviso rojo + botón deshabilitado si balance=0 |
-| **Migración a Mainnet** | ✅ **Celo Mainnet (42220)**. Contrato: `0xbB1ca478A4F6113213f52cC8697a90fD06f0C182`. Ver `MAINNET_MIGRATION.md` para rollback. |
+| **Migración a Mainnet** | ✅ **Celo Mainnet (42220)**. Contrato: `0xF9EcfF87833B53594351F2030d4149583B50AC75`. Deployer/Resolver: `0xdfc0F35940Df64d1bB46103250b5a8EA99EaDa52`. Ver `MAINNET_MIGRATION.md` para rollback. |
 
 ### 🔲 Pendiente
 
@@ -235,6 +235,8 @@ C:\opi\Predikta\
 - **Cambiar env vars en Vercel no redeploya**: hay que hacer redeploy manual o `git commit --allow-empty && git push`.
 - **marketId on-chain** = `keccak256(UUID de Supabase)` — linkea on-chain con off-chain sin oracle.
 - **Foundry PATH**: agregar `export PATH="$PATH:/c/Users/demo/.foundry/bin"` en cada sesión bash nueva.
+- **Deploy.s.sol env vars**: requiere `TREASURY_ADDRESS`, `DEPLOYER_ADDRESS`, `RESOLVER_ADDRESS`, y `PRIVATE_KEY` (con prefijo `0x`). Sin el prefijo falla con "missing hex prefix".
+- **pk.txt**: guardar private keys en `pk.txt` en la raíz. Asegurarse de que esté en el `.gitignore` de la RAÍZ (no solo en `app/.gitignore`).
 - **MiniPay wallet**: no usar botón "Conectar" — auto-connect con Wagmi `useAccount` + conector `injected`. NO usar `useConnection` (no existe en Wagmi v2).
 - **market_status enum**: pending, approved, active, closed, resolved, rejected, cancelled. Sin `needs_review`.
 - **moderation_status enum**: pending, auto_approved, needs_review, auto_rejected. Sin `approved`/`rejected`.
@@ -261,7 +263,7 @@ C:\opi\Predikta\
 - **ENUMs en triggers Supabase**: `level` es `user_level`, `reason` es `trust_reason` — siempre castear con `::user_level` y `::trust_reason`. Valores válidos de trust_reason: market_approved, market_resolved, market_successful, time_active, identity_verified, market_rejected, report_confirmed, misleading_content, fraud.
 - **pg_cron en testing**: usar `'* * * * *'` para cada minuto. Producción: `'0 * * * *'`. Para cambiar: `cron.unschedule('nombre-job')` + recrear.
 - **Admin tab Resolver**: carga approved + active + closed — los tres estados apostables o listos para resolver.
-- **Mainnet deploy — wallets**: la wallet MiniPay (`0x5288...`) y la wallet resolver (`0xA3A1...`) son distintas. CELO para gas va al resolver, no a la MiniPay.
+- **Mainnet deploy — wallets**: la wallet MiniPay/treasury (`0x5288...`) y la wallet resolver/deployer (`0xdfc0F359...`) son distintas. CELO para gas va al resolver, no a la MiniPay. La wallet `0xA3A12179...` quedó comprometida (key expuesta en chat) — no usar más.
 - **Mainnet deploy — bootstrap gas**: USDT en la wallet no alcanza para gas en Foundry. Fee abstraction solo funciona en txs internas de MiniPay, no en `forge script`. Necesitás CELO nativo en la wallet del resolver.
 - **Token fijo por mercado**: el contrato fija el token al crear (`m.token`). `placeBet` siempre usa ese token — no hay forma de pagar con otro. Si el usuario no tiene el token exacto, la tx revierte con "ERC20: transfer amount exceeds balance".
 - **MiniPay copy rules**: nunca usar "apostar", "apuesta", "gas", "crypto" en strings visibles. Usar "participar", "participación", "network fee", "stablecoin". Identificadores de código pueden quedarse como están.
@@ -279,7 +281,7 @@ SUPABASE_SERVICE_ROLE_KEY=<ya configurado>
 
 # Celo
 NEXT_PUBLIC_CHAIN_ID=42220
-NEXT_PUBLIC_PREDIKTA_CONTRACT=0xbB1ca478A4F6113213f52cC8697a90fD06f0C182
+NEXT_PUBLIC_PREDIKTA_CONTRACT=0xF9EcfF87833B53594351F2030d4149583B50AC75
 RESOLVER_PRIVATE_KEY=<wallet que actúa como resolver del contrato>
 
 # MiniMax (URL hardcodeada en código — NO configurar MINIMAX_BASE_URL en Vercel)
