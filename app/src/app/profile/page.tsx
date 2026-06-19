@@ -129,6 +129,16 @@ export default function ProfilePage() {
         </div>
       )}
 
+
+      {(isAdmin || user.wallet_address.toLowerCase() === ADMIN_WALLET) && (
+        <button
+          onClick={() => router.push('/admin')}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600/20 border border-violet-500/30 py-3 text-sm font-semibold text-violet-300 hover:bg-violet-600/30 transition-colors"
+        >
+          <ShieldCheck className="w-4 h-4" />
+          Panel de administración
+        </button>
+      )}
       {/* Recent participations */}
       {participations.length > 0 && (
         <div>
@@ -142,11 +152,10 @@ export default function ProfilePage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-white">{p.amount} {p.token}</p>
-                  <p className={`text-[10px] font-medium ${
-                    p.status === 'won' ? 'text-emerald-400' :
+                  <p className={`text-[10px] font-medium ${p.status === 'won' ? 'text-emerald-400' :
                     p.status === 'lost' ? 'text-red-400' :
-                    'text-white/40'
-                  }`}>{p.status.toUpperCase()}</p>
+                      'text-white/40'
+                    }`}>{p.status.toUpperCase()}</p>
                 </div>
               </div>
             ))}
@@ -154,15 +163,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {(isAdmin || user.wallet_address.toLowerCase() === ADMIN_WALLET) && (
-        <button
-          onClick={() => router.push('/admin')}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-violet-600/20 border border-violet-500/30 py-3 text-sm font-semibold text-violet-300 hover:bg-violet-600/30 transition-colors"
-        >
-          <ShieldCheck className="w-4 h-4" />
-          Panel de administración
-        </button>
-      )}
+
 
       <Separator className="bg-white/10" />
       <p className="text-center text-xs text-white/20 pb-2">

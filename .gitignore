@@ -24,4 +24,4 @@ app/out/
 .DS_Store
 Thumbs.db
 pk.txt
-MAINNET_MIGRATION.md
+*.md
